@@ -1,0 +1,29 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Validate package.json
+        run: node -e "require('./package.json')"
+      - name: Validate openclaw.plugin.json
+        run: node -e "require('./openclaw.plugin.json')"
+      - name: Verify name matches install.npmSpec
+        run: |
+          node -e "
+            const pkg = require('./package.json');
+            const spec = pkg.openclaw?.install?.npmSpec;
+            if (spec !== pkg.name) {
+              console.error('Mismatch: name=' + pkg.name + ' vs install.npmSpec=' + spec);
+              process.exit(1);
+            }
+          "
