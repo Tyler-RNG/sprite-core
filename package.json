@@ -1,0 +1,39 @@
+{
+  "name": "@openclaw/sprite-core",
+  "version": "2026.4.15-beta.1",
+  "description": "OpenClaw SpriteCore plugin — in-gateway asset + TTS + STT data plane for multi-state avatars",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Tyler-RNG/sprite-core.git"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@openclaw/plugin-sdk": "2026.4.15-beta.1",
+    "openclaw": "2026.4.15-beta.1"
+  },
+  "peerDependencies": {
+    "openclaw": ">=2026.4.15-beta.1"
+  },
+  "peerDependenciesMeta": {
+    "openclaw": {
+      "optional": true
+    }
+  },
+  "openclaw": {
+    "extensions": [
+      "./index.ts"
+    ],
+    "install": {
+      "npmSpec": "@openclaw/sprite-core",
+      "defaultChoice": "npm",
+      "minHostVersion": ">=2026.4.10"
+    },
+    "compat": {
+      "pluginApi": ">=2026.4.15-beta.1"
+    },
+    "build": {
+      "openclawVersion": "2026.4.15-beta.1"
+    }
+  }
+}
