@@ -24,7 +24,11 @@ export const DISPLAY_CAPS = [
 export const DISPLAY_MODE_HEADSHOT = "headshot" as const;
 export const DISPLAY_MODE_FULLBODY = "fullbody" as const;
 
-const LoopModeSchema = Type.String({ enum: ["infinite", "once", "ping-pong"] });
+const LoopModeSchema = Type.Union([
+  Type.Literal("infinite"),
+  Type.Literal("once"),
+  Type.Literal("ping-pong"),
+]);
 
 // A single source rectangle inside an atlas image. For non-atlas frame sources
 // only `ref` is set (points at a whole-image asset) and rect coords are omitted.
@@ -69,7 +73,7 @@ const TransitionRefSchema = Type.Union([
   NonEmptyString,
   Type.Object(
     {
-      blend: Type.String({ enum: ["crossfade"] }),
+      blend: Type.Literal("crossfade"),
       ms: Type.Integer({ minimum: 1, maximum: 10_000 }),
     },
     { additionalProperties: false },
@@ -208,7 +212,7 @@ export type ModeContent = Static<typeof ModeContentSchema>;
 export type AssetBundle = Static<typeof AssetBundleSchema>;
 export type EmotionEntry = Static<typeof EmotionEntrySchema>;
 export type EmotionDirective = Static<typeof EmotionDirectiveSchema>;
-export type LoopMode = "infinite" | "once" | "ping-pong";
+export type LoopMode = Static<typeof LoopModeSchema>;
 
 // Wire version literal for the CharacterManifest envelope. Bump + fanout to
 // every client when making a breaking change to the shape.

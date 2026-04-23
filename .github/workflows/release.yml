@@ -5,14 +5,36 @@ on:
     tags:
       - 'v*'
 
-# TODO (build conversation): the client SDKs (client-js, client-kotlin,
-# client-swift) need their own publish paths — Maven Central / Maven GitHub
-# Packages for Kotlin, tagged Git for SwiftPM, and a separate npm publish for
-# client-js. Today this workflow only publishes the plugin to GitHub Packages
-# from packages/plugin/. See the repo-root README for the plan.
+# A single v<version> tag publishes all four artifacts from one commit:
+#   - @tyler-rng/sprite-core              (npm  — GitHub Packages)
+#   - @tyler-rng/sprite-core-client       (npm  — GitHub Packages)
+#   - ai.openclaw.spritecore:sprite-core-client(-android)  (Maven — GitHub Packages)
+#   - SpriteCoreClient                    (SwiftPM consumes the git tag directly)
+#
+# All publish jobs depend on `verify-versions`, which fails the whole release
+# if any package.json / Gradle version disagrees with the tag.
 
 jobs:
+  verify-versions:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.resolve.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - id: resolve
+        name: Resolve tag version
+        run: |
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          echo "version=$TAG_VERSION" >> "$GITHUB_OUTPUT"
+          echo "TAG_VERSION=$TAG_VERSION" >> "$GITHUB_ENV"
+      - name: Enforce all packages match tag
+        run: node scripts/check-versions.mjs "$TAG_VERSION"
+
   publish-plugin:
+    needs: verify-versions
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -27,17 +49,72 @@ jobs:
           node-version: 22
           registry-url: 'https://npm.pkg.github.com'
           scope: '@tyler-rng'
-
-      - name: Verify tag matches plugin package version
-        run: |
-          TAG_VERSION="${GITHUB_REF_NAME#v}"
-          PKG_VERSION=$(node -p "require('./package.json').version")
-          if [ "$TAG_VERSION" != "$PKG_VERSION" ]; then
-            echo "Tag $GITHUB_REF_NAME (version $TAG_VERSION) does not match plugin package.json version $PKG_VERSION"
-            exit 1
-          fi
-
       - name: Publish plugin to GitHub Packages
         run: npm publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  publish-client-js:
+    needs: verify-versions
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@tyler-rng'
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - name: pnpm install
+        run: pnpm install --frozen-lockfile
+      - name: Build schema + client-js
+        run: pnpm --filter ./schema --filter ./packages/client-js run --if-present build
+      - name: Publish client-js to GitHub Packages
+        working-directory: packages/client-js
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  publish-client-kotlin:
+    needs: verify-versions
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Publish :core + :android to GitHub Packages
+        working-directory: packages/client-kotlin
+        env:
+          GITHUB_ACTOR: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gradle \
+            :core:publishMavenPublicationToGitHubPackagesRepository \
+            :android:publishReleasePublicationToGitHubPackagesRepository \
+            -Pversion="${{ needs.verify-versions.outputs.version }}" \
+            --no-daemon
+
+  validate-client-swift:
+    needs: verify-versions
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: swift-actions/setup-swift@v2
+        with:
+          swift-version: "5.10"
+      - name: swift test
+        working-directory: packages/client-swift
+        run: swift test
+      # SwiftPM consumers pull by git tag — no publish step. This job exists
+      # purely to gate the tag: if swift test fails, the tag shouldn't stand.

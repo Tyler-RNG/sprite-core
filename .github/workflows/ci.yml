@@ -6,21 +6,32 @@ on:
   pull_request:
 
 jobs:
-  plugin-smoke:
+  # Fast "does the metadata parse" job that gates everything else.
+  metadata:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: packages/plugin
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Validate package.json
+      - name: Validate root package.json
         run: node -e "require('./package.json')"
-      - name: Validate openclaw.plugin.json
-        run: node -e "require('./openclaw.plugin.json')"
-      - name: Verify name matches install.npmSpec
+      - name: Validate plugin package.json + openclaw.plugin.json
+        run: |
+          node -e "require('./packages/plugin/package.json')"
+          node -e "require('./packages/plugin/openclaw.plugin.json')"
+      - name: Validate client-js package.json
+        run: node -e "require('./packages/client-js/package.json')"
+      - name: Validate schema package.json
+        run: node -e "require('./schema/package.json')"
+      - name: Validate fixture JSON
+        run: |
+          set -e
+          find fixtures -name '*.json' | while read f; do
+            node -e "JSON.parse(require('fs').readFileSync('$f', 'utf8'))"
+          done
+      - name: Verify plugin name matches install.npmSpec
+        working-directory: packages/plugin
         run: |
           node -e "
             const pkg = require('./package.json');
@@ -30,25 +41,60 @@ jobs:
               process.exit(1);
             }
           "
+      - name: Verify version alignment across packages
+        run: node scripts/check-versions.mjs
 
-  # Client SDKs — deeper build/test wiring lands in a follow-up once the
-  # build conversation settles (pnpm install deps, Gradle wrapper, swift test
-  # container). For now, just validate JSON shape on every push.
-  workspace-smoke:
+  typescript:
     runs-on: ubuntu-latest
+    needs: metadata
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Validate workspace root package.json
-        run: node -e "require('./package.json')"
-      - name: Validate client-js package.json
-        run: node -e "require('./packages/client-js/package.json')"
-      - name: Validate schema package.json
-        run: node -e "require('./schema/package.json')"
-      - name: Validate fixture JSON files
-        run: |
-          find fixtures -name '*.json' | while read f; do
-            node -e "JSON.parse(require('fs').readFileSync('$f', 'utf8'))" || exit 1
-          done
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - name: pnpm install
+        run: pnpm install --frozen-lockfile
+      - name: Build schema + client-js
+        run: pnpm --filter ./schema --filter ./packages/client-js run --if-present build
+      - name: Test client-js
+        run: pnpm --filter ./packages/client-js test
+      - name: Typecheck client-js
+        run: pnpm --filter ./packages/client-js typecheck
+      # Plugin typecheck has pre-existing drift against the pinned openclaw
+      # version (see PR description). Skipped until that's sorted in a
+      # follow-up; uncomment once the plugin is re-aligned with the openclaw
+      # plugin-sdk it targets.
+      # - name: Typecheck plugin
+      #   run: pnpm --filter ./packages/plugin typecheck
+
+  kotlin:
+    runs-on: ubuntu-latest
+    needs: metadata
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Gradle build + test (:core, :android)
+        working-directory: packages/client-kotlin
+        run: gradle :core:build :core:test :android:build :android:test --no-daemon
+
+  swift:
+    runs-on: macos-latest
+    needs: metadata
+    steps:
+      - uses: actions/checkout@v4
+      - uses: swift-actions/setup-swift@v2
+        with:
+          swift-version: "5.10"
+      - name: swift build
+        working-directory: packages/client-swift
+        run: swift build
+      - name: swift test
+        working-directory: packages/client-swift
+        run: swift test

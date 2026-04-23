@@ -63,6 +63,20 @@ afterEvaluate {
                             url.set("https://opensource.org/licenses/MIT")
                         }
                     }
+                    scm {
+                        connection.set("scm:git:git://github.com/Tyler-RNG/sprite-core.git")
+                        url.set("https://github.com/Tyler-RNG/sprite-core")
+                    }
+                }
+            }
+        }
+        repositories {
+            maven {
+                name = "GitHubPackages"
+                url = uri("https://maven.pkg.github.com/Tyler-RNG/sprite-core")
+                credentials {
+                    username = System.getenv("GITHUB_ACTOR") ?: findProperty("gpr.user")?.toString()
+                    password = System.getenv("GITHUB_TOKEN") ?: findProperty("gpr.key")?.toString()
                 }
             }
         }
