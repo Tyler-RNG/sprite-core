@@ -1,0 +1,24 @@
+{
+  "kind": "marker",
+  "description": "Invalid marker bodies emit as literal text; nothing silently vanishes.",
+  "cases": [
+    {
+      "name": "body contains whitespace",
+      "chunks": ["keep <<<has space>>> me"],
+      "expectedCleanedText": "keep <<<has space>>> me",
+      "expectedMarkers": []
+    },
+    {
+      "name": "empty body",
+      "chunks": ["keep <<<>>> me"],
+      "expectedCleanedText": "keep <<<>>> me",
+      "expectedMarkers": []
+    },
+    {
+      "name": "body contains disallowed punctuation",
+      "chunks": ["keep <<<state!>>> me"],
+      "expectedCleanedText": "keep <<<state!>>> me",
+      "expectedMarkers": []
+    }
+  ]
+}

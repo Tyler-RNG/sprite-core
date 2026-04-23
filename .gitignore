@@ -6,3 +6,14 @@ dist/
 .env.local
 coverage/
 .turbo/
+
+# Kotlin / Gradle
+packages/client-kotlin/**/build/
+packages/client-kotlin/**/.gradle/
+packages/client-kotlin/.gradle/
+packages/client-kotlin/local.properties
+
+# Swift / SwiftPM
+packages/client-swift/.build/
+packages/client-swift/.swiftpm/
+packages/client-swift/Package.resolved

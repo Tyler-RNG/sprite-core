@@ -1,0 +1,23 @@
+{
+  "name": "@tyler-rng/sprite-core-schema",
+  "version": "1.0.0",
+  "description": "Wire-protocol schema for the SpriteCore plugin + client SDKs (TypeBox)",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./display": "./src/display.ts",
+    "./marker": "./src/marker.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Tyler-RNG/sprite-core.git",
+    "directory": "schema"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@sinclair/typebox": "^0.33.0"
+  },
+  "private": true
+}

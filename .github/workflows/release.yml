@@ -5,12 +5,21 @@ on:
     tags:
       - 'v*'
 
+# TODO (build conversation): the client SDKs (client-js, client-kotlin,
+# client-swift) need their own publish paths — Maven Central / Maven GitHub
+# Packages for Kotlin, tagged Git for SwiftPM, and a separate npm publish for
+# client-js. Today this workflow only publishes the plugin to GitHub Packages
+# from packages/plugin/. See the repo-root README for the plan.
+
 jobs:
-  publish:
+  publish-plugin:
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
+    defaults:
+      run:
+        working-directory: packages/plugin
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -19,16 +28,16 @@ jobs:
           registry-url: 'https://npm.pkg.github.com'
           scope: '@tyler-rng'
 
-      - name: Verify tag matches package version
+      - name: Verify tag matches plugin package version
         run: |
           TAG_VERSION="${GITHUB_REF_NAME#v}"
           PKG_VERSION=$(node -p "require('./package.json').version")
           if [ "$TAG_VERSION" != "$PKG_VERSION" ]; then
-            echo "Tag $GITHUB_REF_NAME (version $TAG_VERSION) does not match package.json version $PKG_VERSION"
+            echo "Tag $GITHUB_REF_NAME (version $TAG_VERSION) does not match plugin package.json version $PKG_VERSION"
             exit 1
           fi
 
-      - name: Publish to GitHub Packages
+      - name: Publish plugin to GitHub Packages
         run: npm publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

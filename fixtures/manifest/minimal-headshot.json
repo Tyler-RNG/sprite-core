@@ -1,0 +1,26 @@
+{
+  "kind": "manifest",
+  "description": "Smallest valid manifest: one mode, one flat animation, one asset ref",
+  "manifest": {
+    "version": 1,
+    "agentId": "ginger",
+    "modes": ["headshot"],
+    "stateMap": { "idle": "idle" },
+    "content": {
+      "headshot": {
+        "animations": {
+          "idle": {
+            "sequence": {
+              "frames": [{ "ref": "idle.00" }],
+              "fps": 12,
+              "loop": "infinite"
+            }
+          }
+        }
+      }
+    },
+    "assets": {
+      "refs": { "idle.00": "atlas/idle_00.webp" }
+    }
+  }
+}

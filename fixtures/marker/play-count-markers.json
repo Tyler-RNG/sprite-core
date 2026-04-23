@@ -1,0 +1,36 @@
+{
+  "kind": "marker",
+  "description": "<<<state-N>>> markers carry a numeric play-count suffix.",
+  "cases": [
+    {
+      "name": "explicit play-once marker",
+      "chunks": ["<<<wink-1>>> goodbye"],
+      "expectedCleanedText": " goodbye",
+      "expectedMarkers": [{ "state": "wink", "count": 1 }]
+    },
+    {
+      "name": "multi-play count",
+      "chunks": ["hi <<<happy-3>>>"],
+      "expectedCleanedText": "hi ",
+      "expectedMarkers": [{ "state": "happy", "count": 3 }]
+    },
+    {
+      "name": "count zero == explicit loop forever",
+      "chunks": ["<<<idle-0>>>"],
+      "expectedCleanedText": "",
+      "expectedMarkers": [{ "state": "idle", "count": 0 }]
+    },
+    {
+      "name": "hyphenated state name without numeric suffix",
+      "chunks": ["<<<head-cocked>>>"],
+      "expectedCleanedText": "",
+      "expectedMarkers": [{ "state": "head-cocked", "count": null }]
+    },
+    {
+      "name": "hyphenated state name with numeric suffix — last dash wins",
+      "chunks": ["<<<head_cocked-2>>>"],
+      "expectedCleanedText": "",
+      "expectedMarkers": [{ "state": "head_cocked", "count": 2 }]
+    }
+  ]
+}

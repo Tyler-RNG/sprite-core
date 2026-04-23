@@ -6,8 +6,11 @@ on:
   pull_request:
 
 jobs:
-  smoke:
+  plugin-smoke:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/plugin
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -27,3 +30,25 @@ jobs:
               process.exit(1);
             }
           "
+
+  # Client SDKs — deeper build/test wiring lands in a follow-up once the
+  # build conversation settles (pnpm install deps, Gradle wrapper, swift test
+  # container). For now, just validate JSON shape on every push.
+  workspace-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Validate workspace root package.json
+        run: node -e "require('./package.json')"
+      - name: Validate client-js package.json
+        run: node -e "require('./packages/client-js/package.json')"
+      - name: Validate schema package.json
+        run: node -e "require('./schema/package.json')"
+      - name: Validate fixture JSON files
+        run: |
+          find fixtures -name '*.json' | while read f; do
+            node -e "JSON.parse(require('fs').readFileSync('$f', 'utf8'))" || exit 1
+          done

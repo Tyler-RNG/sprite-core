@@ -1,0 +1,24 @@
+{
+  "kind": "marker",
+  "description": "The streaming parser recognises markers whose open/body/close is split across push() calls.",
+  "cases": [
+    {
+      "name": "marker split between chunks",
+      "chunks": ["start <<<hap", "py>>> end"],
+      "expectedCleanedText": "start  end",
+      "expectedMarkers": [{ "state": "happy", "count": null }]
+    },
+    {
+      "name": "partial <<< at tail of chunk buffered for next",
+      "chunks": ["prefix <<", "<happy>>> tail"],
+      "expectedCleanedText": "prefix  tail",
+      "expectedMarkers": [{ "state": "happy", "count": null }]
+    },
+    {
+      "name": "unterminated marker flushed as literal",
+      "chunks": ["keep me <<<unfinish"],
+      "expectedCleanedText": "keep me <<<unfinish",
+      "expectedMarkers": []
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "kind": "sprite-player",
+  "description": "Ping-pong loop walks forward, then back (without the endpoints), capped by iterations.",
+  "manifest": {
+    "version": 1,
+    "agentId": "agent",
+    "modes": ["headshot"],
+    "stateMap": { "wave": "wave" },
+    "content": {
+      "headshot": {
+        "animations": {
+          "wave": {
+            "sequence": {
+              "frames": [
+                { "ref": "wave.00" },
+                { "ref": "wave.01" },
+                { "ref": "wave.02" }
+              ],
+              "fps": 60,
+              "loop": "ping-pong",
+              "iterations": 1
+            }
+          }
+        }
+      }
+    },
+    "assets": {
+      "refs": { "wave.00": "p/w0", "wave.01": "p/w1", "wave.02": "p/w2" }
+    }
+  },
+  "mode": "headshot",
+  "requests": [],
+  "expectedRefSequencePrefix": [
+    "wave.00",
+    "wave.01",
+    "wave.02",
+    "wave.01"
+  ]
+}

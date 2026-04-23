@@ -1,0 +1,51 @@
+{
+  "kind": "sprite-player",
+  "description": "A phased state plays intro once on entry, then loops.",
+  "manifest": {
+    "version": 1,
+    "agentId": "agent",
+    "modes": ["headshot"],
+    "stateMap": { "idle": "idle", "thinking": "thinking" },
+    "content": {
+      "headshot": {
+        "animations": {
+          "idle": {
+            "sequence": { "frames": [{ "ref": "idle.00" }], "fps": 60, "loop": "infinite" }
+          },
+          "thinking": {
+            "intro": {
+              "frames": [{ "ref": "thinking.intro.00" }, { "ref": "thinking.intro.01" }],
+              "fps": 60,
+              "loop": "once"
+            },
+            "loop": {
+              "frames": [{ "ref": "thinking.loop.00" }, { "ref": "thinking.loop.01" }],
+              "fps": 60,
+              "loop": "infinite"
+            }
+          }
+        }
+      }
+    },
+    "assets": {
+      "refs": {
+        "idle.00": "p/idle_00",
+        "thinking.intro.00": "p/t_i_0",
+        "thinking.intro.01": "p/t_i_1",
+        "thinking.loop.00": "p/t_l_0",
+        "thinking.loop.01": "p/t_l_1"
+      }
+    }
+  },
+  "mode": "headshot",
+  "requests": [
+    { "target": "thinking", "playCount": null, "advanceMs": 80 }
+  ],
+  "expectedRefSequencePrefix": [
+    "idle.00",
+    "thinking.intro.00",
+    "thinking.intro.01",
+    "thinking.loop.00",
+    "thinking.loop.01"
+  ]
+}
