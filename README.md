@@ -19,6 +19,52 @@ workspace-relative image path, an http(s) URL, a data URI, or a short string /
 emoji. Anything richer (atlas, multiple states, prompting vocabulary, voice
 selection) lives in this plugin's config block.
 
+## Install (private beta)
+
+This plugin is currently private. Installing it requires a GitHub Personal
+Access Token and a one-time npm config. You must be a collaborator on the
+`Tyler-RNG/sprite-core` GitHub repo.
+
+**1. Create a GitHub Personal Access Token.** Go to
+<https://github.com/settings/tokens/new> and generate a classic token with
+the `read:packages` scope (that's the only scope you need). Copy the token
+(it starts with `ghp_`).
+
+**2. Point the `@tyler-rng` npm scope at GitHub Packages.** Add these two
+lines to your `~/.npmrc` (create it if it doesn't exist):
+
+```
+@tyler-rng:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=ghp_YOUR_TOKEN_HERE
+```
+
+Replace `ghp_YOUR_TOKEN_HERE` with the token from step 1. Then
+`chmod 600 ~/.npmrc` so other users on the machine can't read your token.
+
+**3. Install with the normal openclaw command.**
+
+```bash
+openclaw plugin install @tyler-rng/sprite-core
+```
+
+OpenClaw resolves the `@tyler-rng` scope against GitHub Packages using your
+token, downloads the tarball, and extracts it into your plugin directory.
+Updates later: `openclaw plugin update @tyler-rng/sprite-core`.
+
+**4. Enable and configure it.** See [Enable](#enable) below for the
+`openclaw.json` config block to paste in, then restart your gateway.
+
+**Troubleshooting:**
+
+- `401 Unauthorized` — your token is wrong, expired, or missing the
+  `read:packages` scope. Regenerate it.
+- `404 Not Found` — either you're not a collaborator on
+  `Tyler-RNG/sprite-core`, or your `~/.npmrc` doesn't have the
+  `@tyler-rng:registry=...` line pointing at `npm.pkg.github.com`.
+- Plugin installs but doesn't load — confirm
+  `plugins.entries["sprite-core"].enabled: true` is in your `openclaw.json`
+  and restart the gateway.
+
 ## Enable
 
 ```jsonc
