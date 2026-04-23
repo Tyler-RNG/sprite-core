@@ -1,6 +1,6 @@
 {
   "name": "@tyler-rng/sprite-core",
-  "version": "2026.4.15-beta.1",
+  "version": "1.0.0",
   "description": "OpenClaw SpriteCore plugin — in-gateway asset + TTS + STT data plane for multi-state avatars",
   "type": "module",
   "repository": {
