@@ -35,6 +35,11 @@ Ask the user:
   At minimum include `idle` and `thinking` (the watch auto-plays `thinking`
   while waiting for replies).
 - **Agent id** this will be wired into (default: `agent`).
+- **Voice** — which ElevenLabs voice the agent should speak with. Offer
+  to run `--list-voices` (see Step 5b) so the user can pick; if they have
+  no preference, suggest `--voice auto` for a smoke-test voice they can
+  change later. A voice id drops an `elevenlabs` voice block into the
+  wired config so TTS just works the moment the gateway restarts.
 
 ### 2. Create the character (step 1 of 4)
 
@@ -94,16 +99,44 @@ Expect ~5–10 min per emotion. The script prints `✓ <emotion> complete` as
 each job finishes. If any emotion fails, the script exits non-zero with a
 summary — rerun with just the failed emotions to fill in the gaps.
 
-### 5. Export into SpriteCore (step 4 of 4)
+### 5a. (Optional) Discover ElevenLabs voices
+
+Before exporting, if the user wants to pin a specific voice, list what's
+in their ElevenLabs library:
+
+```bash
+node scripts/pixellab-export.mjs --list-voices
+```
+
+No `--uid` required — this is a read-only lookup. Each line prints
+`<voiceId>  <name> [category]  <labels>`. Copy the voice id the user
+picks and pass it to the export step via `--voice-id`.
+
+Auth: `ELEVENLABS_API_KEY` env, `--elevenlabs-api-key-command <cmd>`,
+or `pass show elevenlabs/api-key`.
+
+### 5b. Export into SpriteCore (step 4 of 4)
 
 Once animations exist on the character, the exporter pulls the ZIP bundle,
 calls `/characters/<id>/animations` for canonical emotion names (`happy`,
 `sad`, etc. — not the verbose pixellab slugs), packs frames into a WebP
-atlas, writes the manifest, and prints the config snippet ready to paste
-into `openclaw.json`.
+atlas, writes the manifest, generates the config block (including the
+voice if a voice id was supplied), and with `--apply` patches
+`openclaw.json` directly.
 
 ```bash
-# Writes atlas + manifest to ~/.openclaw/assets/avatars/<agent-id>/
+# Normal path: write atlas + manifest AND patch openclaw.json in one shot.
+# The exporter backs up the config before writing; restart the gateway
+# afterward so it picks up the new agent entry.
+node scripts/pixellab-export.mjs \
+  --uid <character_id> \
+  --agent-id <agent-id> \
+  --overwrite \
+  --apply
+
+# Dry-style path: write atlas + manifest only; print the openclaw.json
+# snippet for manual review/paste. Use this when you want to eyeball the
+# block before wiring it in.
 node scripts/pixellab-export.mjs \
   --uid <character_id> \
   --agent-id <agent-id> \
@@ -180,11 +213,16 @@ exporter, so any existing call site keeps working.
 
 ### 6. Wire into `openclaw.json`
 
-Copy the config snippet the exporter prints into `openclaw.json` under
-`plugins.entries["sprite-core"].config.agents.<agent-id>`, then restart the
-gateway. Default state from the snippet is `idle` when present; otherwise
-the first animation. Review before saving — sometimes you want a more
-specific default.
+If you ran the exporter with `--apply`, this step is already done — the
+exporter wrote the agent block under
+`plugins.entries["sprite-core"].config.agents.<agent-id>` and printed the
+backup path. Skip to the restart in Step 7.
+
+If you ran without `--apply`, copy the config snippet the exporter printed
+into `openclaw.json` under
+`plugins.entries["sprite-core"].config.agents.<agent-id>`. Default state
+from the snippet is `idle` when present; otherwise the first animation.
+Review before saving — sometimes you want a more specific default.
 
 ### 7. Verify
 
@@ -208,15 +246,22 @@ specific default.
 
 ## Open TODOs
 
-- `--apply` flag for the exporter: patch the snippet directly into
-  `openclaw.json` under `plugins.entries["sprite-core"].config.agents.<id>`
-  and optionally restart the gateway, so the whole flow is one command.
-- Animate-then-tag pipeline: today the operator passes `--rename` so the
-  exporter can collapse pixellab's verbose slugs back to canonical emotion
-  names. Better would be for `pixellab-animate.mjs` to tag each animation
-  upstream with the emotion key it was invoked with, making `--rename`
-  unnecessary.
-- `/characters/<id>/animations` currently 404s in our environment so the
-  exporter falls back to slug names. Confirm the pixellab API contract
-  (endpoint path / required auth / response shape) and update the exporter,
-  or remove the fetch entirely if it's permanently gone.
+- Animate-then-tag pipeline: today the exporter's `DEFAULT_CANONICAL_RENAMES`
+  map collapses pixellab's verbose slugs back to canonical emotion names
+  (`idle`, `happy`, `sad`, …) when `/characters/<id>/animations` 404s.
+  Better would be for `pixellab-animate.mjs` to tag each animation upstream
+  with the emotion key it was invoked with (via a name field in the
+  animate-character request or a follow-up PATCH), so the mapping is
+  upstream and the exporter never has to guess.
+- Auto-restart the gateway after `--apply`: currently the exporter prints a
+  restart command but intentionally does not run it (visible side effect
+  the operator should own). Add `--restart-gateway` as opt-in sugar for
+  unattended runs.
+- `/characters/<id>/animations` currently 404s in our environment; the
+  exporter falls back to slug names plus the canonical rename map.
+  Confirm the pixellab API contract (endpoint path / required auth /
+  response shape) and update the exporter, or remove the fetch entirely
+  if it's permanently gone.
+- Pixellab 3-concurrent-job cap: account-wide limit seen during batch
+  runs. Future: add a simple semaphore to the animate or batch scripts so
+  parallel pipelines block-and-retry instead of 429'ing out on create.

@@ -47,6 +47,52 @@ const PIXELLAB_API_BASE = "https://api.pixellab.ai/v2";
 const ATLAS_COLS = 7; // matches the 1024×1024 / 136-px-frame layout used upstream
 const DEFAULT_ATLAS_SIDE = 1024;
 
+// Fallback slug → canonical-emotion rename map applied when the pixellab
+// `/characters/<id>/animations` metadata endpoint returns 404 (often) and the
+// operator did not pass `--rename`. These substrings mirror the default
+// prompts in `pixellab-animate.mjs`. Without this, the manifest ends up with
+// verbose state keys like `big_open-mouth_smile_eyes_bright_and_crinkled_in_j`
+// that break the SpriteCore state contract. User-supplied `--rename` overrides
+// these (so a stoic character with a custom "warm smile" prompt can still map
+// cleanly). Match is case-insensitive substring after normalizing `_`/`-` to
+// spaces.
+const DEFAULT_CANONICAL_RENAMES = {
+  idle: "gentle breathing",
+  thinking: "hand on chin",
+  happy: "big open mouth smile",
+  sad: "shoulders slumped",
+  angry: "clenched teeth",
+  surprised: "mouth agape",
+  love: "eyes becoming hearts",
+  wink: "playful wink",
+  smile: "warm genuine smile",
+  frown: "disappointed frown",
+  sleepy: "drowsy half closed",
+  annoyed: "frustrated eye roll",
+};
+
+// Full human-readable descriptions for each canonical emotion. Used to
+// override pixellab's 50-char-truncated slug description when the rename
+// step matched a canonical emotion. Keys match `DEFAULT_CANONICAL_RENAMES`
+// and `pixellab-animate.mjs#DEFAULT_PROMPTS` (the prompt text we fed
+// pixellab to generate the animation in the first place). Without this,
+// snippets look like `"description": "big open-mouth smile eyes bright and
+// crinkled in j"` (chopped mid-word by the pixellab slug limit).
+const DEFAULT_CANONICAL_DESCRIPTIONS = {
+  idle: "standing still, gentle breathing, subtle weight shift side to side",
+  thinking: "hand on chin, eyes glancing upward, head tilting thoughtfully, pondering",
+  happy: "big open-mouth smile, eyes bright and crinkled in joy, slight excited bounce",
+  sad: "head lowered, eyes downcast, shoulders slumped, downturned mouth, sorrowful",
+  angry: "furrowed brow, clenched teeth, fists tightened, body leaning forward, frustrated",
+  surprised: "eyes wide open, mouth agape, slight step back, arms raised, shocked",
+  love: "eyes becoming hearts, cheeks blushing pink, hands clasped near chest, shy adoring smile",
+  wink: "one eye closed in a playful wink, confident smirk, slight head tilt, finger-gun gesture",
+  smile: "gentle mouth curving from neutral to a warm genuine smile, eyes softening",
+  frown: "neutral expression turning to a disappointed frown, brow slightly furrowed",
+  sleepy: "eyes transitioning from alert to drowsy half-closed, head gently nodding, yawning",
+  annoyed: "neutral turning to frustrated eye roll, arms crossing, exasperated sigh",
+};
+
 function parseArgs(argv) {
   const opts = {
     uid: null,
@@ -64,6 +110,8 @@ function parseArgs(argv) {
     voiceAuto: false,
     listVoices: false,
     elevenApiKeyCommand: null,
+    apply: false,
+    configPath: null,
   };
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
@@ -132,6 +180,15 @@ function parseArgs(argv) {
       case "--elevenlabs-api-key-command":
         opts.elevenApiKeyCommand = argv[++i];
         break;
+      case "--apply":
+        // Patch the generated snippet directly into openclaw.json under
+        // `plugins.entries["sprite-core"].config.agents.<agent-id>`. Backs
+        // up the existing config with a timestamp suffix before writing.
+        opts.apply = true;
+        break;
+      case "--config-path":
+        opts.configPath = argv[++i];
+        break;
       case "-h":
       case "--help":
         printUsage();
@@ -181,6 +238,68 @@ function printUsage() {
   console.error("  --list-voices        List available ElevenLabs voices and exit");
   console.error("  --elevenlabs-api-key-command <cmd>  Stdout is the ElevenLabs API key;");
   console.error("                       fallback when ELEVENLABS_API_KEY env is unset");
+  console.error("");
+  console.error("  Config apply:");
+  console.error("  --apply              Patch openclaw.json directly (backed up first)");
+  console.error("  --config-path <p>    Override openclaw.json location (default: ~/.openclaw/openclaw.json)");
+}
+
+/**
+ * Patch `plugins.entries["sprite-core"].config.agents.<agentId>` in
+ * openclaw.json with the freshly-generated block. Writes a timestamped
+ * backup next to the config before overwriting. Creates any missing
+ * intermediate objects so fresh configs still work.
+ *
+ * The gateway reads config at startup, so the caller still needs to
+ * restart the gateway for the new block to become visible — we print a
+ * reminder but deliberately do NOT auto-restart (visible side effect
+ * the operator should own).
+ */
+async function applyToConfig({ agentId, agentBlock, configPath }) {
+  const resolved = path.resolve(
+    configPath ?? path.join(os.homedir(), ".openclaw", "openclaw.json"),
+  );
+  let raw;
+  try {
+    raw = await readFile(resolved, "utf8");
+  } catch (err) {
+    throw new Error(`--apply: cannot read ${resolved}: ${err.message}`);
+  }
+  let cfg;
+  try {
+    cfg = JSON.parse(raw);
+  } catch (err) {
+    throw new Error(`--apply: ${resolved} is not valid JSON: ${err.message}`);
+  }
+
+  const timestamp = new Date()
+    .toISOString()
+    .replace(/[-:]/g, "")
+    .replace(/\..+/, "")
+    .replace("T", "-");
+  const backup = `${resolved}.pre-apply-${timestamp}`;
+  await writeFile(backup, raw);
+
+  cfg.plugins ??= {};
+  cfg.plugins.entries ??= {};
+  cfg.plugins.entries["sprite-core"] ??= { enabled: true, config: {} };
+  cfg.plugins.entries["sprite-core"].config ??= {};
+  cfg.plugins.entries["sprite-core"].config.agents ??= {};
+  const existed =
+    agentId in cfg.plugins.entries["sprite-core"].config.agents;
+  cfg.plugins.entries["sprite-core"].config.agents[agentId] = agentBlock;
+
+  // Preserve trailing newline behavior from the source so diffs stay clean.
+  const trailingNewline = raw.endsWith("\n") ? "\n" : "";
+  await writeFile(resolved, `${JSON.stringify(cfg, null, 2)}${trailingNewline}`);
+
+  console.log("");
+  console.log(`✓ applied to ${resolved}`);
+  console.log(`  ${existed ? "replaced" : "added"} plugins.entries["sprite-core"].config.agents.${agentId}`);
+  console.log(`  backup: ${backup}`);
+  console.log("");
+  console.log("↻ restart the gateway to pick up the new entry:");
+  console.log("  pkill -9 -f openclaw-gateway; nohup openclaw gateway run --bind loopback --port 18789 --force > /tmp/openclaw-gateway.log 2>&1 &");
 }
 
 function resolveApiKey(apiKeyCommand) {
@@ -470,7 +589,10 @@ async function detectAnimationDirs(extractDir, apiMetadata, renameMap) {
   const { readdir } = await import("node:fs/promises");
   const dirents = await readdir(animationsRoot, { withFileTypes: true });
 
-  const renameEntries = renameMap ? Object.entries(renameMap) : [];
+  // User-supplied renames override defaults so custom per-character prompts
+  // still land on canonical emotion keys.
+  const mergedRenames = { ...DEFAULT_CANONICAL_RENAMES, ...(renameMap ?? {}) };
+  const renameEntries = Object.entries(mergedRenames);
   // Normalize `_` and `-` to spaces so natural-language needles
   // (e.g. "standing still") match underscored pixellab slugs
   // (e.g. "standing_still_breathing_gently").
@@ -509,7 +631,15 @@ async function detectAnimationDirs(extractDir, apiMetadata, renameMap) {
     const apiType = apiEntry?.animationType?.trim();
     const renamed = tryRename(slug, apiType);
     const cleanName = renamed ?? apiType ?? slug;
-    const description = apiEntry?.displayName || prettifySlug(slug);
+    // Prefer the canonical full-prompt description over pixellab's truncated
+    // slug when we renamed into a known canonical emotion. User-supplied
+    // display_name (from the API metadata endpoint) still wins when present.
+    const canonicalDescription =
+      renamed && DEFAULT_CANONICAL_DESCRIPTIONS[renamed]
+        ? DEFAULT_CANONICAL_DESCRIPTIONS[renamed]
+        : null;
+    const description =
+      apiEntry?.displayName || canonicalDescription || prettifySlug(slug);
     raw.push({
       dir: facingDir,
       slug,
@@ -874,8 +1004,14 @@ async function main() {
     ),
   };
 
-  console.log('paste into openclaw.json under plugins.entries["sprite-core"].config.agents:');
-  console.log(JSON.stringify({ [agentId]: agentBlock }, null, 2));
+  if (opts.apply) {
+    await applyToConfig({ agentId, agentBlock, configPath: opts.configPath });
+  } else {
+    console.log('paste into openclaw.json under plugins.entries["sprite-core"].config.agents:');
+    console.log(JSON.stringify({ [agentId]: agentBlock }, null, 2));
+    console.log("");
+    console.log("tip: pass --apply to patch openclaw.json directly (backs up first).");
+  }
   if (!voiceBlock) {
     console.log("");
     console.log(

@@ -43,21 +43,23 @@ const DEFAULT_FRAME_COUNT = 8;
 
 // Pixellab reads `action_description` as a natural-language prompt. The
 // clean `animation_type` we want back comes from pixellab's own classifier
-// on the prompt, so the wording matters. These default prompts were tuned
-// against test characters to produce the corresponding animation_type.
+// on the prompt, so the wording matters. Motion-oriented verbs + explicit
+// body language land on-target far more often than bare emotion tokens —
+// "happy" alone often produces a neutral stance; "big smile, eyes bright,
+// slight excited bounce" reliably produces a recognizable happy loop.
 const DEFAULT_PROMPTS = {
-  idle: "standing still breathing gently",
-  thinking: "hand on chin looking up hmm expression pondering",
-  happy: "warm smile bright eyes joyful expression",
-  sad: "downturned mouth droopy eyes sorrowful expression",
-  angry: "furrowed brow scowl frustrated expression",
-  surprised: "wide eyes open mouth shocked expression",
-  smile: "subtle smirk to genuine smile",
-  frown: "neutral to disappointed frown",
-  love: "blushing heart eyes shy smile adoring expression",
-  wink: "playful wink with smirk flirty expression",
-  sleepy: "alert to drowsy half-closed eyes",
-  annoyed: "neutral to frustrated eye roll",
+  idle: "standing still, gentle breathing, subtle weight shift side to side",
+  thinking: "hand on chin, eyes glancing upward, head tilting thoughtfully, pondering",
+  happy: "big open-mouth smile, eyes bright and crinkled in joy, slight excited bounce",
+  sad: "head lowered, eyes downcast, shoulders slumped, downturned mouth, sorrowful",
+  angry: "furrowed brow, clenched teeth, fists tightened, body leaning forward, frustrated",
+  surprised: "eyes wide open, mouth agape, slight step back, arms raised, shocked",
+  smile: "gentle mouth curving from neutral to a warm genuine smile, eyes softening",
+  frown: "neutral expression turning to a disappointed frown, brow slightly furrowed",
+  love: "eyes becoming hearts, cheeks blushing pink, hands clasped near chest, shy adoring smile",
+  wink: "one eye closed in a playful wink, confident smirk, slight head tilt, finger-gun gesture",
+  sleepy: "eyes transitioning from alert to drowsy half-closed, head gently nodding, yawning",
+  annoyed: "neutral turning to frustrated eye roll, arms crossing, exasperated sigh",
 };
 
 function parseArgs(argv) {
