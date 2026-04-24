@@ -269,6 +269,17 @@ the OpenClaw Control UI are required.
 
 **URL:** `https://<your-gateway>/sprite-core/ui`
 
+The HTML shell is served publicly so the SPA can bootstrap. Every API call
+attaches an `Authorization: Bearer <token>` header read same-origin from
+browser storage. The dashboard tries (in order) the Control UI's
+`openclaw.device.auth.v1` store and the legacy
+`openclaw.control.token.v1[:<gateway>]` key. If neither is present (e.g.
+the Control UI keeps its session token in memory only), the dashboard
+renders a one-time "paste your token" panel. Copy the value from
+`~/.openclaw/openclaw.json` → `gateway.auth.token`, paste it once, and
+the dashboard remembers it under
+`sprite-core.dashboard.gatewayToken.v1`.
+
 The dashboard uses the same TypeScript client SDK (`@tyler-rng/sprite-core-client`)
 that the phone and watch use to render avatars. Previews in the editor drive
 through the real playback engine, so what you see in the dashboard is exactly
