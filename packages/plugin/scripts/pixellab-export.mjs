@@ -170,8 +170,11 @@ function parseArgs(argv) {
         // ElevenLabs library. Any other value is treated as a voice id.
         {
           const v = argv[++i];
-          if (v === "auto") opts.voiceAuto = true;
-          else opts.voiceId = v;
+          if (v === "auto") {
+            opts.voiceAuto = true;
+          } else {
+            opts.voiceId = v;
+          }
         }
         break;
       case "--list-voices":
@@ -263,13 +266,13 @@ async function applyToConfig({ agentId, agentBlock, configPath }) {
   try {
     raw = await readFile(resolved, "utf8");
   } catch (err) {
-    throw new Error(`--apply: cannot read ${resolved}: ${err.message}`);
+    throw new Error(`--apply: cannot read ${resolved}: ${err.message}`, { cause: err });
   }
   let cfg;
   try {
     cfg = JSON.parse(raw);
   } catch (err) {
-    throw new Error(`--apply: ${resolved} is not valid JSON: ${err.message}`);
+    throw new Error(`--apply: ${resolved} is not valid JSON: ${err.message}`, { cause: err });
   }
 
   const timestamp = new Date()
@@ -344,14 +347,18 @@ function resolveApiKey(apiKeyCommand) {
 
 function resolveElevenLabsKey(apiKeyCommand) {
   const fromEnv = process.env.ELEVENLABS_API_KEY?.trim();
-  if (fromEnv) return fromEnv;
+  if (fromEnv) {
+    return fromEnv;
+  }
   if (apiKeyCommand) {
     try {
       const out = execFileSync("sh", ["-c", apiKeyCommand], {
         encoding: "utf8",
         stdio: ["ignore", "pipe", "inherit"],
       }).trim();
-      if (out) return out;
+      if (out) {
+        return out;
+      }
     } catch (err) {
       console.error(`--elevenlabs-api-key-command failed: ${err.message}`);
       return null;
@@ -362,7 +369,9 @@ function resolveElevenLabsKey(apiKeyCommand) {
       encoding: "utf8",
       stdio: ["ignore", "pipe", "ignore"],
     }).trim();
-    if (out) return out;
+    if (out) {
+      return out;
+    }
   } catch {
     // pass not available or entry missing — silent; caller decides fallback.
   }
@@ -591,7 +600,7 @@ async function detectAnimationDirs(extractDir, apiMetadata, renameMap) {
 
   // User-supplied renames override defaults so custom per-character prompts
   // still land on canonical emotion keys.
-  const mergedRenames = { ...DEFAULT_CANONICAL_RENAMES, ...(renameMap ?? {}) };
+  const mergedRenames = { ...DEFAULT_CANONICAL_RENAMES, ...renameMap };
   const renameEntries = Object.entries(mergedRenames);
   // Normalize `_` and `-` to spaces so natural-language needles
   // (e.g. "standing still") match underscored pixellab slugs
@@ -839,7 +848,7 @@ async function main() {
     }
     for (const v of voices) {
       const labelBits = Object.entries(v.labels || {})
-        .map(([k, val]) => `${k}=${val}`)
+        .map(([k, val]) => `${k}=${String(val)}`)
         .join(" ");
       const cat = v.category ? ` [${v.category}]` : "";
       console.log(`${v.voiceId}  ${v.name}${cat}${labelBits ? `  ${labelBits}` : ""}`);

@@ -72,6 +72,9 @@ OpenClaw installs the plugin like any other npm-served extension:
 }
 ```
 
+Full config schema and the dashboard UI are documented in
+[`packages/plugin/README.md`](./packages/plugin/README.md).
+
 And the apps pull in the language-appropriate client SDK:
 
 - Web / Electron / React Native → `@tyler-rng/sprite-core-client` (npm)
@@ -80,6 +83,36 @@ And the apps pull in the language-appropriate client SDK:
 
 For live-development against OpenClaw without publishing, both Gradle
 (`includeBuild`) and SwiftPM (`path:`) support local path links.
+
+## Installing a dev build into your local OpenClaw
+
+If you're testing plugin changes against a real gateway without publishing to
+npm, use the helper script — it builds the UI, packs the plugin, drops it into
+your OpenClaw install's `node_modules`, and restarts the daemon:
+
+```bash
+# Defaults to ~/.openclaw/app (the global `npm i -g openclaw` location)
+scripts/install-into-openclaw.sh
+
+# Or point at a different install:
+scripts/install-into-openclaw.sh --install-dir /path/to/openclaw
+
+# Faster iteration: reuse an existing ui-dist/ build
+scripts/install-into-openclaw.sh --skip-build
+```
+
+The script is idempotent — every run does an atomic swap and keeps the
+previous copy at `node_modules/@tyler-rng/sprite-core.prev` for rollback.
+
+After it finishes, enable the plugin in your `openclaw.json` (see
+[packages/plugin/README.md → Enable](./packages/plugin/README.md#enable))
+and browse to `http://localhost:18789/sprite-core/ui/` — the dashboard's
+HTML shell is served publicly; its API calls are same-origin and ride the
+session you already have for the OpenClaw Control UI.
+
+`scripts/sync-to-openclaw.sh` serves a narrower use case: it mirrors this
+repo's plugin sources into a sibling `openclaw-src/extensions/sprite-core/`
+checkout. Only relevant if you're developing OpenClaw core at the same time.
 
 ## License
 

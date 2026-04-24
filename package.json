@@ -11,6 +11,7 @@
   "license": "MIT",
   "workspaces": [
     "packages/plugin",
+    "packages/plugin/ui",
     "packages/client-js",
     "schema"
   ],

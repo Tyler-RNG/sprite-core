@@ -3,11 +3,24 @@
 #
 # The running gateway loads the bundled plugin from openclaw-src/extensions/
 # sprite-core (and its dist-runtime mirror), not from this standalone repo.
-# While the standalone repo is being developed, mirror skills + scripts +
-# template over so live agents pick up changes.
+# This script promotes the standalone repo's sources into that location so a
+# subsequent `~/.openclaw/deploy.sh` run picks them up.
 #
 # Usage: scripts/sync-to-openclaw.sh [openclaw-src-root]
 #   openclaw-src-root defaults to ~/openclaw-src.
+#
+# What gets synced:
+#   - Plugin entry   (index.ts)
+#   - Plugin sources (src/*.ts, excluding *.test.ts)
+#   - Plugin manifest (openclaw.plugin.json)
+#   - Built UI bundle (ui-dist/)  — build it first with
+#       pnpm --filter @tyler-rng/sprite-core-ui build
+#   - Auxiliary content (scripts/, template/, .agents/skills/) as before
+#
+# What is NOT synced:
+#   - package.json — openclaw-src has its own (@openclaw/sprite-core, workspace
+#     deps against the SDK). Don't overwrite it.
+#   - Tests (*.test.ts) — openclaw-src runs its own test suite.
 
 set -euo pipefail
 
@@ -24,6 +37,24 @@ fi
 echo "sprite-core sync"
 echo "  source: $SPRITE_CORE_ROOT"
 echo "  dest:   $DEST"
+
+# Plugin entry, sources, and manifest.
+cp "$SPRITE_CORE_ROOT/packages/plugin/index.ts" "$DEST/index.ts"
+cp "$SPRITE_CORE_ROOT/packages/plugin/openclaw.plugin.json" "$DEST/openclaw.plugin.json"
+mkdir -p "$DEST/src"
+rsync -a --delete --exclude='*.test.ts' \
+  "$SPRITE_CORE_ROOT/packages/plugin/src/" "$DEST/src/"
+
+# Built UI bundle — required for GET /sprite-core/ui to work post-deploy.
+# If the build hasn't been run, fail early with a clear message.
+UI_DIST="$SPRITE_CORE_ROOT/packages/plugin/ui-dist"
+if [[ ! -d "$UI_DIST" || ! -f "$UI_DIST/index.html" ]]; then
+  echo "error: UI bundle missing at $UI_DIST" >&2
+  echo "  build it first: pnpm --filter @tyler-rng/sprite-core-ui build" >&2
+  exit 1
+fi
+mkdir -p "$DEST/ui-dist"
+rsync -a --delete "$UI_DIST/" "$DEST/ui-dist/"
 
 # Scripts and template are 1:1 mirrors — no path rewrites needed.
 mkdir -p "$DEST/scripts" "$DEST/template"

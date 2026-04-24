@@ -1,8 +1,16 @@
 import { loadConfig } from "openclaw/plugin-sdk/config-runtime";
 import { definePluginEntry } from "openclaw/plugin-sdk/plugin-entry";
 import { AGENTS_ROUTE_PATH, handleAgentsRequest } from "./src/agents-route.js";
+import {
+  AGENTS_WRITE_ROUTE_PREFIX,
+  handleAgentsWriteRequest,
+} from "./src/agents-write-route.js";
 import { ASSETS_ROUTE_PATH, handleAssetsRequest } from "./src/assets-route.js";
 import { buildCharacterManifest } from "./src/character-manifest.js";
+import {
+  CHARACTER_MANIFEST_ROUTE_PATH,
+  handleCharacterManifestRequest,
+} from "./src/character-manifest-route.js";
 import {
   buildPromptingInstruction,
   hasSpriteDisplayCapability,
@@ -10,6 +18,7 @@ import {
 } from "./src/prompting.js";
 import { handleSttRequest, STT_ROUTE_PATH } from "./src/stt-route.js";
 import { handleTtsRequest, TTS_ROUTE_PATH } from "./src/tts-route.js";
+import { handleUiRequest, UI_ROUTE_PATH } from "./src/ui-route.js";
 import type { SpriteCoreConfig } from "./src/types.js";
 
 const SPRITE_CORE_PLUGIN_ID = "sprite-core";
@@ -89,6 +98,45 @@ export default definePluginEntry({
           assets: fresh?.assets,
         });
       },
+    });
+
+    // Dashboard UI (browser SPA). Serves the built bundle from
+    // packages/plugin/ui-dist/ shipped inside the plugin package. Prefix
+    // match so nested asset paths (/sprite-core/ui/assets/app.abc123.js)
+    // resolve through the same handler.
+    //
+    // auth: "plugin" — the static HTML + JS bundle has no secrets and must
+    // be servable to a fresh browser so the SPA can bootstrap. The SPA then
+    // uses `credentials: "same-origin"` for its API calls to `/sprite-core/*`
+    // which remain gateway-gated. This mirrors how openclaw's Control UI
+    // serves its HTML shell at `/` unauthenticated and authenticates its
+    // API calls after the bundle has loaded.
+    api.registerHttpRoute({
+      path: UI_ROUTE_PATH,
+      match: "prefix",
+      auth: "plugin",
+      handler: (req, res) => handleUiRequest(req, res),
+    });
+
+    // HTTP sibling of node.getCharacterManifest — the dashboard UI consumes
+    // this to drive the client SDK's AssetSource without speaking the
+    // gateway WebSocket. Keeps everything the UI needs on the HTTP plane.
+    api.registerHttpRoute({
+      path: CHARACTER_MANIFEST_ROUTE_PATH,
+      match: "exact",
+      auth: "gateway",
+      handler: (req, res) =>
+        handleCharacterManifestRequest(req, res, { readPluginConfig }),
+    });
+
+    // Write endpoints: PUT /sprite-core/agents/:id and
+    // PUT /sprite-core/agents/:id/emotions/:state. The handler performs its
+    // own path parsing, so register as a prefix match.
+    api.registerHttpRoute({
+      path: AGENTS_WRITE_ROUTE_PREFIX,
+      match: "prefix",
+      auth: "gateway",
+      handler: (req, res) => handleAgentsWriteRequest(req, res),
     });
 
     // System-prompt contribution: teach the model the `<<<state>>>` marker

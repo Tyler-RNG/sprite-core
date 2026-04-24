@@ -250,12 +250,50 @@ name in the manifest just works.
 
 ## Routes
 
-| Path                          | Auth      | Purpose                                                                |
-| ----------------------------- | --------- | ---------------------------------------------------------------------- |
-| `GET /openclaw-assets/<path>` | gateway\* | Static asset serving. \*`auth: "plugin"` when `publicAssets: true`.    |
-| `GET /stream/tts`             | gateway   | Streaming TTS proxy (ElevenLabs).                                      |
-| `POST /stream/stt`            | gateway   | Streaming STT proxy (ElevenLabs).                                      |
-| `GET /sprite-core/agents`     | gateway   | `{ agents: { <id>: { avatar, voice } }, publicBaseUrl? }` for clients. |
+| Path                                                         | Auth      | Purpose                                                                                         |
+| ------------------------------------------------------------ | --------- | ----------------------------------------------------------------------------------------------- |
+| `GET /openclaw-assets/<path>`                                | gateway\* | Static asset serving. \*`auth: "plugin"` when `publicAssets: true`.                             |
+| `GET /stream/tts`                                            | gateway   | Streaming TTS proxy (ElevenLabs).                                                               |
+| `POST /stream/stt`                                           | gateway   | Streaming STT proxy (ElevenLabs).                                                               |
+| `GET /sprite-core/agents`                                    | gateway   | `{ agents: { <id>: { avatar, voice } }, publicBaseUrl? }` for clients.                          |
+| `PUT /sprite-core/agents/:id`                                | gateway   | Replace a single agent entry. Body: `AgentEntry`. Dashboard UI writes here.                     |
+| `PUT /sprite-core/agents/:id/emotions/:state`                | gateway   | Replace a single emotion entry. Body: `{ description, directive? }`. Dashboard UI writes here.  |
+| `GET /sprite-core/character-manifest?agentId=<id>[&mode=...]` | gateway   | HTTP sibling of `node.getCharacterManifest` — used by the dashboard UI preview.                 |
+| `GET /sprite-core/ui[/path]`                                 | plugin    | Dashboard UI bundle (static HTML + JS, no secrets). See [Dashboard UI](#dashboard-ui).          |
+
+## Dashboard UI
+
+SpriteCore ships with a browser dashboard for editing per-agent avatar,
+voice, and emotion config. It's served by the plugin itself — no changes to
+the OpenClaw Control UI are required.
+
+**URL:** `https://<your-gateway>/sprite-core/ui`
+
+The dashboard uses the same TypeScript client SDK (`@tyler-rng/sprite-core-client`)
+that the phone and watch use to render avatars. Previews in the editor drive
+through the real playback engine, so what you see in the dashboard is exactly
+what users see on-device.
+
+Writes go through the OpenClaw SDK's config-file write path
+(`readConfigFileSnapshotForWrite` + `writeConfigFile`). Saving in the
+dashboard is equivalent to hand-editing `openclaw.json`'s
+`plugins.entries["sprite-core"].config` branch — and no other branches are
+ever touched.
+
+### Building the UI bundle
+
+The dashboard is prebuilt into `packages/plugin/ui-dist/` before publish, so
+npm-installed copies of the plugin serve the UI out of the box. For
+in-workspace development:
+
+```sh
+# from repo root
+pnpm --filter @tyler-rng/sprite-core-ui build       # one-shot build
+pnpm --filter @tyler-rng/sprite-core-ui dev         # Vite dev server (HMR)
+```
+
+In dev mode, Vite proxies `/sprite-core/*` to the gateway URL in
+`SPRITE_CORE_GATEWAY_URL` (default `http://localhost:8080`).
 
 ## Gateway RPC
 

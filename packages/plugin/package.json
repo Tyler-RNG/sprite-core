@@ -13,6 +13,7 @@
     "index.ts",
     "src",
     "template",
+    "ui-dist",
     "openclaw.plugin.json",
     "tsconfig.json",
     "LICENSE",
@@ -20,7 +21,9 @@
   ],
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "build:ui": "pnpm --filter @tyler-rng/sprite-core-ui build",
+    "dev:ui": "pnpm --filter @tyler-rng/sprite-core-ui dev"
   },
   "devDependencies": {
     "openclaw": "2026.4.15-beta.1",

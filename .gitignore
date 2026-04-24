@@ -1,11 +1,13 @@
 node_modules/
 dist/
+packages/plugin/ui-dist/
 .DS_Store
 *.log
 .env
 .env.local
 coverage/
 .turbo/
+*.tsbuildinfo
 
 # Kotlin / Gradle
 packages/client-kotlin/**/build/
