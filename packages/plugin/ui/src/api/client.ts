@@ -1,3 +1,4 @@
+import { authHeader } from "./auth.js";
 import type { AgentEntry, AgentsResponse, EmotionEntry } from "./types.js";
 
 // The UI is served from the same origin as the plugin routes, so relative
@@ -25,7 +26,11 @@ async function parseJson<T>(res: Response): Promise<T> {
 }
 
 export async function getAgents(signal?: AbortSignal): Promise<AgentsResponse> {
-  const res = await fetch(`${BASE}/agents`, { signal, credentials: "same-origin" });
+  const res = await fetch(`${BASE}/agents`, {
+    signal,
+    credentials: "same-origin",
+    headers: { ...authHeader() },
+  });
   return parseJson<AgentsResponse>(res);
 }
 
@@ -33,7 +38,7 @@ export async function putAgent(agentId: string, entry: AgentEntry): Promise<void
   const res = await fetch(`${BASE}/agents/${encodeURIComponent(agentId)}`, {
     method: "PUT",
     credentials: "same-origin",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...authHeader() },
     body: JSON.stringify(entry),
   });
   await parseJson<{ ok: true }>(res);
@@ -49,7 +54,7 @@ export async function putEmotion(
     {
       method: "PUT",
       credentials: "same-origin",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...authHeader() },
       body: JSON.stringify(entry),
     },
   );

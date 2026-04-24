@@ -9,6 +9,7 @@ import type {
   NodeGetCharacterManifestResult,
   FrameRef,
 } from "@tyler-rng/sprite-core-schema";
+import { authHeader } from "../api/auth.js";
 import { useObservable } from "./use-observable.js";
 
 // Decode raw asset bytes into a blob URL the browser can render in <img>.
@@ -65,14 +66,17 @@ type Props = {
 async function fetchManifest(agentId: string): Promise<NodeGetCharacterManifestResult | null> {
   const res = await fetch(
     `/sprite-core/character-manifest?agentId=${encodeURIComponent(agentId)}`,
-    { credentials: "same-origin" },
+    { credentials: "same-origin", headers: { ...authHeader() } },
   );
   if (!res.ok) return null;
   return (await res.json()) as NodeGetCharacterManifestResult;
 }
 
 async function fetchAsset(relativePath: string): Promise<Uint8Array | null> {
-  const res = await fetch(`/openclaw-assets/${relativePath}`, { credentials: "same-origin" });
+  const res = await fetch(`/openclaw-assets/${relativePath}`, {
+    credentials: "same-origin",
+    headers: { ...authHeader() },
+  });
   if (!res.ok) return null;
   const buf = await res.arrayBuffer();
   return new Uint8Array(buf);
