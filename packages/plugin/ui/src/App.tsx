@@ -1,6 +1,12 @@
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getAgents } from "./api/client.js";
+import {
+  clearOverrideToken,
+  MissingAuthTokenError,
+  readOverrideToken,
+  setOverrideToken,
+} from "./api/auth.js";
 import { EmotionEditor } from "./components/EmotionEditor.js";
 import { AvatarPreview } from "./preview/AvatarPreview.js";
 import type { AgentEntry } from "./api/types.js";
@@ -9,6 +15,7 @@ export function App(): JSX.Element {
   const agentsQuery = useQuery({
     queryKey: ["agents"],
     queryFn: ({ signal }) => getAgents(signal),
+    retry: false,
   });
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
 
@@ -16,6 +23,11 @@ export function App(): JSX.Element {
   const agentIds = useMemo(() => Object.keys(agents).sort(), [agents]);
   const activeId = selectedAgentId && agents[selectedAgentId] ? selectedAgentId : agentIds[0] ?? null;
   const active: AgentEntry | null = activeId ? agents[activeId] ?? null : null;
+
+  const error = agentsQuery.error;
+  const needsToken =
+    error instanceof MissingAuthTokenError ||
+    (error instanceof Error && /401|unauthorized/i.test(error.message));
 
   return (
     <div className="shell">
@@ -26,10 +38,10 @@ export function App(): JSX.Element {
       <aside className="sidebar">
         <h2>Agents</h2>
         {agentsQuery.isLoading && <div className="empty">loading…</div>}
-        {agentsQuery.isError && (
+        {agentsQuery.isError && !needsToken && (
           <div className="empty status error">{String(agentsQuery.error)}</div>
         )}
-        {!agentsQuery.isLoading && agentIds.length === 0 && (
+        {!agentsQuery.isLoading && !agentsQuery.isError && agentIds.length === 0 && (
           <div className="empty">no agents configured</div>
         )}
         <ul>
@@ -46,13 +58,70 @@ export function App(): JSX.Element {
         </ul>
       </aside>
       <main className="main">
-        {active && activeId ? (
+        {needsToken ? (
+          <TokenPrompt error={error as Error} />
+        ) : active && activeId ? (
           <AgentPane agentId={activeId} agent={active} />
         ) : (
           <div className="empty">Select an agent to begin.</div>
         )}
       </main>
     </div>
+  );
+}
+
+function TokenPrompt({ error }: { error: Error }): JSX.Element {
+  const qc = useQueryClient();
+  const [draft, setDraft] = useState(() => readOverrideToken() ?? "");
+  const existing = readOverrideToken();
+  return (
+    <section style={{ maxWidth: 640 }}>
+      <h2>Sign-in needed</h2>
+      <p className="dim">
+        The dashboard couldn't find a Control UI auth token in your browser
+        storage on this origin, so every API call returns 401. Paste your
+        gateway token below — you'll find it in your{" "}
+        <code>~/.openclaw/openclaw.json</code> at <code>gateway.auth.token</code>,
+        or in the OpenClaw Control UI under Settings → Gateway. The token is
+        kept in <code>localStorage</code> on this device only.
+      </p>
+      <div className="card" style={{ display: "grid", gap: 8 }}>
+        <input
+          type="password"
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          placeholder="gateway token"
+          spellCheck={false}
+          autoComplete="off"
+          style={{ fontFamily: "monospace" }}
+        />
+        <div style={{ display: "flex", gap: 8 }}>
+          <button
+            onClick={() => {
+              setOverrideToken(draft);
+              qc.invalidateQueries({ queryKey: ["agents"] });
+            }}
+            disabled={!draft.trim()}
+          >
+            Save & retry
+          </button>
+          {existing && (
+            <button
+              onClick={() => {
+                clearOverrideToken();
+                setDraft("");
+                qc.invalidateQueries({ queryKey: ["agents"] });
+              }}
+            >
+              Clear saved token
+            </button>
+          )}
+        </div>
+        <div className="empty status error" style={{ marginTop: 4 }}>
+          {error.message}
+        </div>
+      </div>
+    </section>
   );
 }
 
