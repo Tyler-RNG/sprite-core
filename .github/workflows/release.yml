@@ -105,9 +105,9 @@ jobs:
       - uses: pnpm/action-setup@v4
       - name: pnpm install
         run: pnpm install --frozen-lockfile
-      - name: Build schema + plugin UI
+      - name: Build schema + client-js + plugin UI
         run: |
-          pnpm --filter ./schema run build
+          pnpm --filter ./schema --filter ./packages/client-js run --if-present build
           pnpm --filter @tylerwarburton/sprite-core-ui run build
       - name: Publish plugin to npm
         working-directory: packages/plugin
