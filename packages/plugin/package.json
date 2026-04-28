@@ -1,6 +1,6 @@
 {
   "name": "@tylerwarburton/sprite-core",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "OpenClaw SpriteCore plugin — in-gateway asset + TTS + STT data plane for multi-state avatars",
   "type": "module",
   "repository": {
