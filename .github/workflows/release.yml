@@ -1,0 +1,139 @@
+name: Release
+
+# Manual-trigger release. Pick a version, the workflow validates that every
+# package.json / Gradle file already reads that version, then publishes:
+#   - @tylerwarburton/sprite-core-schema  (npm — public registry)
+#   - @tylerwarburton/sprite-core-client  (npm — public registry)
+#   - @tylerwarburton/sprite-core         (npm — public registry)
+#   - ai.openclaw.spritecore:sprite-core-client(-android)  (Maven — GitHub Packages)
+#   - SpriteCoreClient (SwiftPM consumes the git tag directly)
+#
+# Required secret:
+#   NPM_TOKEN — automation token for the public npm registry, with
+#               publish access to the @tylerwarburton scope.
+#
+# Optional second trigger: pushing a tag matching `v*` runs the same flow.
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g. 0.5.0). Must already match every package.json / Gradle version.'
+        required: true
+        type: string
+      tag:
+        description: 'Create and push a v<version> git tag after publishing.'
+        required: false
+        type: boolean
+        default: true
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  resolve-version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.resolve.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - id: resolve
+        name: Resolve target version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ inputs.version }}"
+          else
+            VERSION="${GITHUB_REF_NAME#v}"
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "TAG_VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "Releasing version: $VERSION"
+      - name: Enforce all packages match target version
+        run: node scripts/check-versions.mjs "$TAG_VERSION"
+
+  publish-schema:
+    needs: resolve-version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: 'https://registry.npmjs.org'
+      - uses: pnpm/action-setup@v4
+      - name: pnpm install
+        run: pnpm install --frozen-lockfile
+      - name: Build schema
+        run: pnpm --filter ./schema run build
+      - name: Publish schema to npm
+        working-directory: schema
+        run: pnpm publish --access public --no-git-checks
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  publish-client-js:
+    needs: publish-schema
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: 'https://registry.npmjs.org'
+      - uses: pnpm/action-setup@v4
+      - name: pnpm install
+        run: pnpm install --frozen-lockfile
+      - name: Build schema + client-js
+        run: pnpm --filter ./schema --filter ./packages/client-js run --if-present build
+      - name: Publish client-js to npm
+        working-directory: packages/client-js
+        run: pnpm publish --access public --no-git-checks
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  publish-plugin:
+    needs: publish-schema
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: 'https://registry.npmjs.org'
+      - uses: pnpm/action-setup@v4
+      - name: pnpm install
+        run: pnpm install --frozen-lockfile
+      - name: Build schema + plugin UI
+        run: |
+          pnpm --filter ./schema run build
+          pnpm --filter @tylerwarburton/sprite-core-ui run build
+      - name: Publish plugin to npm
+        working-directory: packages/plugin
+        run: pnpm publish --access public --no-git-checks
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  # Kotlin Maven and Swift validate jobs were removed from the release flow
+  # while the Kotlin toolchain (Kotlin / Gradle / AGP versions) is being
+  # re-aligned. The source code stays in packages/client-kotlin and
+  # packages/client-swift; re-enable publish-client-kotlin /
+  # validate-client-swift here once the toolchain is sorted.
+
+  tag-release:
+    needs: [resolve-version, publish-schema, publish-client-js, publish-plugin]
+    if: github.event_name == 'workflow_dispatch' && inputs.tag
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create and push v${{ needs.resolve-version.outputs.version }} tag
+        env:
+          VERSION: ${{ needs.resolve-version.outputs.version }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag "v$VERSION"
+          git push origin "v$VERSION"

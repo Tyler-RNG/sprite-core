@@ -1,0 +1,21 @@
+node_modules/
+dist/
+packages/plugin/ui-dist/
+.DS_Store
+*.log
+.env
+.env.local
+coverage/
+.turbo/
+*.tsbuildinfo
+
+# Kotlin / Gradle
+packages/client-kotlin/**/build/
+packages/client-kotlin/**/.gradle/
+packages/client-kotlin/.gradle/
+packages/client-kotlin/local.properties
+
+# Swift / SwiftPM
+packages/client-swift/.build/
+packages/client-swift/.swiftpm/
+packages/client-swift/Package.resolved

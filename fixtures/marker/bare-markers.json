@@ -1,0 +1,33 @@
+{
+  "kind": "marker",
+  "description": "Bare <<<state>>> markers without play-count.",
+  "cases": [
+    {
+      "name": "single marker in middle of text",
+      "chunks": ["hello <<<happy>>> world"],
+      "expectedCleanedText": "hello  world",
+      "expectedMarkers": [{ "state": "happy", "count": null }]
+    },
+    {
+      "name": "two markers in same chunk",
+      "chunks": ["<<<idle>>> a <<<thinking>>> b"],
+      "expectedCleanedText": " a  b",
+      "expectedMarkers": [
+        { "state": "idle", "count": null },
+        { "state": "thinking", "count": null }
+      ]
+    },
+    {
+      "name": "no markers in text",
+      "chunks": ["just some words"],
+      "expectedCleanedText": "just some words",
+      "expectedMarkers": []
+    },
+    {
+      "name": "empty input",
+      "chunks": [""],
+      "expectedCleanedText": "",
+      "expectedMarkers": []
+    }
+  ]
+}

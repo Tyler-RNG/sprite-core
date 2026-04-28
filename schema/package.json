@@ -1,0 +1,47 @@
+{
+  "name": "@tylerwarburton/sprite-core-schema",
+  "version": "0.5.0",
+  "description": "Wire-protocol schema for the SpriteCore plugin + client SDKs (TypeBox)",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./display": {
+      "types": "./dist/display.d.ts",
+      "import": "./dist/display.js"
+    },
+    "./marker": {
+      "types": "./dist/marker.d.ts",
+      "import": "./dist/marker.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Tyler-RNG/sprite-core.git",
+    "directory": "schema"
+  },
+  "author": "Tyler Warburton",
+  "license": "MIT",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@sinclair/typebox": "^0.33.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

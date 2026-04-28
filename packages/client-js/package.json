@@ -1,0 +1,45 @@
+{
+  "name": "@tylerwarburton/sprite-core-client",
+  "version": "0.5.0",
+  "description": "TypeScript client SDK for the SpriteCore plugin — portable animation graph + sprite player for browsers, Node, and any JS runtime",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./schema": {
+      "types": "./dist/schema.d.ts",
+      "import": "./dist/schema.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Tyler-RNG/sprite-core.git",
+    "directory": "packages/client-js"
+  },
+  "author": "Tyler Warburton",
+  "license": "MIT",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@tylerwarburton/sprite-core-schema": "workspace:^"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.0",
+    "vitest": "^2.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

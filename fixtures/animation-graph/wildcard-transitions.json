@@ -1,0 +1,65 @@
+{
+  "kind": "animation-graph",
+  "description": "Wildcard transitions resolve by specificity: exact → from-wildcard → to-wildcard → *->*.",
+  "manifest": {
+    "version": 1,
+    "agentId": "agent",
+    "modes": ["headshot"],
+    "stateMap": { "idle": "idle", "thinking": "thinking", "happy": "happy" },
+    "content": {
+      "headshot": {
+        "animations": {
+          "idle": {
+            "sequence": { "frames": [{ "ref": "idle.00" }], "fps": 12, "loop": "infinite" }
+          },
+          "thinking": {
+            "intro": { "frames": [{ "ref": "thinking.intro.00" }], "fps": 24, "loop": "once" },
+            "loop": { "frames": [{ "ref": "thinking.loop.00" }], "fps": 12, "loop": "infinite" },
+            "outro": { "frames": [{ "ref": "thinking.outro.00" }], "fps": 24, "loop": "once" }
+          },
+          "happy": {
+            "sequence": { "frames": [{ "ref": "happy.00" }], "fps": 24, "loop": "once" }
+          }
+        },
+        "transitions": {
+          "idle->happy": "happy",
+          "thinking->*": "thinking.outro",
+          "*->thinking": "thinking.intro",
+          "*->*": "idle"
+        }
+      }
+    },
+    "assets": {
+      "refs": {
+        "idle.00": "p/idle_00",
+        "thinking.intro.00": "p/thinking_intro_00",
+        "thinking.loop.00": "p/thinking_loop_00",
+        "thinking.outro.00": "p/thinking_outro_00",
+        "happy.00": "p/happy_00"
+      }
+    }
+  },
+  "mode": "headshot",
+  "cases": [
+    {
+      "name": "exact pair match wins over all wildcards",
+      "resolveTransition": { "from": "idle", "to": "happy" },
+      "expected": "happy"
+    },
+    {
+      "name": "from-wildcard wins when no exact pair",
+      "resolveTransition": { "from": "thinking", "to": "happy" },
+      "expected": "thinking.outro"
+    },
+    {
+      "name": "to-wildcard wins when no exact or from-wildcard",
+      "resolveTransition": { "from": "happy", "to": "thinking" },
+      "expected": "thinking.intro"
+    },
+    {
+      "name": "star-star catches what nothing else does",
+      "resolveTransition": { "from": "happy", "to": "idle" },
+      "expected": "idle"
+    }
+  ]
+}

@@ -1,0 +1,41 @@
+{
+  "kind": "sprite-player",
+  "description": "playCount=2 replays the loop phase exactly twice, then holds the last frame.",
+  "manifest": {
+    "version": 1,
+    "agentId": "agent",
+    "modes": ["headshot"],
+    "stateMap": { "idle": "idle", "wink": "wink" },
+    "content": {
+      "headshot": {
+        "animations": {
+          "idle": {
+            "sequence": { "frames": [{ "ref": "idle.00" }], "fps": 60, "loop": "infinite" }
+          },
+          "wink": {
+            "sequence": {
+              "frames": [{ "ref": "wink.00" }, { "ref": "wink.01" }],
+              "fps": 60,
+              "loop": "infinite"
+            }
+          }
+        }
+      }
+    },
+    "assets": {
+      "refs": { "idle.00": "p/idle", "wink.00": "p/w0", "wink.01": "p/w1" }
+    }
+  },
+  "mode": "headshot",
+  "requests": [
+    { "target": "wink", "playCount": 2, "advanceMs": 80 }
+  ],
+  "expectedRefSequencePrefix": [
+    "idle.00",
+    "wink.00",
+    "wink.01",
+    "wink.00",
+    "wink.01"
+  ],
+  "expectedHoldRef": "wink.01"
+}

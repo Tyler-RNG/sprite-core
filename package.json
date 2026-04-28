@@ -1,0 +1,26 @@
+{
+  "name": "sprite-core-monorepo",
+  "version": "0.5.0",
+  "description": "SpriteCore plugin + cross-language client SDKs (TypeScript, Kotlin, Swift)",
+  "private": true,
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Tyler-RNG/sprite-core.git"
+  },
+  "author": "Tyler Warburton",
+  "license": "MIT",
+  "workspaces": [
+    "packages/plugin",
+    "packages/plugin/ui",
+    "packages/client-js",
+    "schema"
+  ],
+  "scripts": {
+    "build": "pnpm -r --if-present build",
+    "test": "pnpm -r --if-present test",
+    "lint": "pnpm -r --if-present lint",
+    "typecheck": "pnpm -r --if-present typecheck"
+  },
+  "packageManager": "pnpm@9.0.0"
+}
