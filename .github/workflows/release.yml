@@ -115,14 +115,49 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-  # Kotlin Maven and Swift validate jobs were removed from the release flow
-  # while the Kotlin toolchain (Kotlin / Gradle / AGP versions) is being
-  # re-aligned. The source code stays in packages/client-kotlin and
-  # packages/client-swift; re-enable publish-client-kotlin /
-  # validate-client-swift here once the toolchain is sorted.
+  publish-client-kotlin:
+    needs: resolve-version
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.10.2
+      - name: Publish :core + :android to GitHub Packages
+        working-directory: packages/client-kotlin
+        env:
+          GITHUB_ACTOR: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gradle \
+            :core:publishMavenPublicationToGitHubPackagesRepository \
+            :android:publishReleasePublicationToGitHubPackagesRepository \
+            -Pversion="${{ needs.resolve-version.outputs.version }}" \
+            --no-daemon
+
+  validate-client-swift:
+    needs: resolve-version
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: swift-actions/setup-swift@v2
+        with:
+          swift-version: "5.10"
+      - name: swift test
+        working-directory: packages/client-swift
+        run: swift test
+      # SwiftPM consumers pull by git tag — no publish step. This job exists
+      # purely to gate the release: if swift test fails, the tag shouldn't stand.
 
   tag-release:
-    needs: [resolve-version, publish-schema, publish-client-js, publish-plugin]
+    needs: [resolve-version, publish-schema, publish-client-js, publish-plugin, publish-client-kotlin, validate-client-swift]
     if: github.event_name == 'workflow_dispatch' && inputs.tag
     runs-on: ubuntu-latest
     permissions:
