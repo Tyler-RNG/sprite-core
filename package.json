@@ -1,6 +1,6 @@
 {
   "name": "sprite-core-monorepo",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "description": "SpriteCore plugin + cross-language client SDKs (TypeScript, Kotlin, Swift)",
   "private": true,
   "type": "module",

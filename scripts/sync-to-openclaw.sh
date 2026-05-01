@@ -63,14 +63,15 @@ rsync -a --delete \
 rsync -a --delete \
   "$SPRITE_CORE_ROOT/packages/plugin/template/" "$DEST/template/"
 
-# Skills live under .agents/skills/. Mirror the directory, then rewrite the
-# SKILL.md paths from plugin-rooted ("scripts/foo.mjs", "README.md") to
-# monorepo-rooted ("extensions/sprite-core/scripts/foo.mjs",
-# "extensions/sprite-core/README.md") so the deployed skill resolves files
-# correctly when executed from the openclaw-src repo root.
+# Skills live under packages/plugin/.agents/skills/ (so they ship inside the
+# npm tarball). Mirror the directory, then rewrite the SKILL.md paths from
+# plugin-rooted ("scripts/foo.mjs", "README.md") to monorepo-rooted
+# ("extensions/sprite-core/scripts/foo.mjs", "extensions/sprite-core/README.md")
+# so the deployed skill resolves files correctly when executed from the
+# openclaw-src repo root.
 mkdir -p "$DEST/.agents/skills"
 rsync -a --delete \
-  "$SPRITE_CORE_ROOT/.agents/skills/" "$DEST/.agents/skills/"
+  "$SPRITE_CORE_ROOT/packages/plugin/.agents/skills/" "$DEST/.agents/skills/"
 
 SKILL_FILE="$DEST/.agents/skills/openclaw-pixellab-avatar/SKILL.md"
 if [[ -f "$SKILL_FILE" ]]; then
