@@ -21,20 +21,14 @@
  */
 
 import { createWriteStream } from "node:fs";
-import {
-  mkdir,
-  readdir,
-  readFile,
-  rm,
-  stat,
-  writeFile,
-} from "node:fs/promises";
+import { mkdir, readdir, rm, stat, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import JSZip from "jszip";
 import sharp from "sharp";
+import { readBytes } from "./pixellab-fs.js";
 
 const PIXELLAB_API_BASE = "https://api.pixellab.ai/v2";
 const ATLAS_COLS = 7;
@@ -388,7 +382,7 @@ async function extractZip(args: {
     await rm(args.extractDir, { recursive: true, force: true });
   }
   await mkdir(args.extractDir, { recursive: true });
-  const zipBytes = await readFile(args.zipPath);
+  const zipBytes = await readBytes(args.zipPath);
   const zip = await JSZip.loadAsync(zipBytes);
   const entries = Object.values(zip.files);
   for (const entry of entries) {
@@ -547,7 +541,7 @@ async function buildAtlas(args: {
 
   const composites = await Promise.all(
     allFrames.map(async (frame, i) => ({
-      input: await readFile(frame),
+      input: await readBytes(frame),
       left: (i % cols) * frameW,
       top: Math.floor(i / cols) * frameH,
     })),

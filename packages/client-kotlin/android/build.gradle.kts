@@ -6,7 +6,7 @@ plugins {
 }
 
 group = "ai.openclaw.spritecore"
-version = findProperty("version")?.toString() ?: "0.5.3"
+version = findProperty("version")?.toString() ?: "0.5.4"
 
 android {
     namespace = "ai.openclaw.spritecore.client.android"

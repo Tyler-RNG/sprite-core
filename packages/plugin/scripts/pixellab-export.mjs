@@ -35,7 +35,7 @@
 // Never commit the key.
 
 import { createWriteStream } from "node:fs";
-import { mkdir, readFile, rm, stat, writeFile } from "node:fs/promises";
+import { mkdir, rm, stat, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { Readable } from "node:stream";
@@ -43,6 +43,7 @@ import { pipeline } from "node:stream/promises";
 import { fileURLToPath } from "node:url";
 import JSZip from "jszip";
 import sharp from "sharp";
+import { readBytes, readUtf8 } from "./_pixellab-fs.mjs";
 
 const PIXELLAB_API_BASE = "https://api.pixellab.ai/v2";
 const ATLAS_COLS = 7; // matches the 1024×1024 / 136-px-frame layout used upstream
@@ -255,7 +256,7 @@ async function applyToConfig({ agentId, agentBlock, configPath }) {
   );
   let raw;
   try {
-    raw = await readFile(resolved, "utf8");
+    raw = await readUtf8(resolved);
   } catch (err) {
     throw new Error(`--apply: cannot read ${resolved}: ${err.message}`, { cause: err });
   }
@@ -465,7 +466,7 @@ async function extractZip({ zipPath, extractDir, skipExtract, overwrite }) {
     await rm(extractDir, { recursive: true, force: true });
   }
   await mkdir(extractDir, { recursive: true });
-  const zipBytes = await readFile(zipPath);
+  const zipBytes = await readBytes(zipPath);
   const zip = await JSZip.loadAsync(zipBytes);
   const entries = Object.values(zip.files);
   for (const entry of entries) {
@@ -487,7 +488,7 @@ async function detectCharacterName(extractDir, fallback) {
     return fallback || "character";
   }
   try {
-    const meta = JSON.parse(await readFile(metaPath, "utf8"));
+    const meta = JSON.parse(await readUtf8(metaPath));
     // PixelLab bundles nest the character under `character.name`. Top-level
     // `name` is a fallback in case the shape ever flattens.
     const candidates = [meta?.character?.name, meta?.name];
@@ -683,7 +684,7 @@ async function buildAtlas({ framesRoot, atlasOut }) {
 
   const composites = await Promise.all(
     allFrames.map(async (frame, i) => ({
-      input: await readFile(frame),
+      input: await readBytes(frame),
       left: (i % cols) * frameW,
       top: Math.floor(i / cols) * frameH,
     })),

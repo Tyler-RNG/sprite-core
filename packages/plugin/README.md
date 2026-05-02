@@ -19,18 +19,27 @@ workspace-relative image path, an http(s) URL, a data URI, or a short string /
 emoji. Anything richer (atlas, multiple states, prompting vocabulary, voice
 selection) lives in this plugin's config block.
 
-## Install
+## Quick start
 
 ```bash
-openclaw plugin install @tylerwarburton/sprite-core
+# 1. Install from npm (auto-enables the plugin)
+openclaw plugins install @tylerwarburton/sprite-core
+
+# 2. Seed a working default config + placeholder agent atlas
+node ~/.openclaw/extensions/sprite-core/scripts/init-config.mjs
+
+# 3. Restart the gateway — the watch/phone now renders the placeholder avatar
+systemctl --user restart openclaw-gateway   # Linux systemd user unit
+# (or kill + relaunch the macOS menubar app)
 ```
 
-OpenClaw resolves the package from the public npm registry, downloads the
-tarball, and extracts it into your plugin directory. Updates later:
-`openclaw plugin update @tylerwarburton/sprite-core`.
+The plugin works end-to-end after step 3: a four-color placeholder atlas
+renders for the default `agent` id, and TTS/STT are off until you provide an
+ElevenLabs API key (see [`streamTts`](#streamtts) below). To replace the
+placeholder with real pixel art, ask Claude to run the
+`openclaw-pixellab-avatar` skill that ships with this plugin.
 
-After install, enable and configure it — see [Enable](#enable) below for the
-`openclaw.json` config block to paste in, then restart your gateway.
+Updates later: `openclaw plugins install @tylerwarburton/sprite-core --force --pin`.
 
 **Troubleshooting:**
 
@@ -40,7 +49,10 @@ After install, enable and configure it — see [Enable](#enable) below for the
   `plugins.entries["sprite-core"].enabled: true` is in your `openclaw.json`
   and restart the gateway.
 
-## Enable
+## Full config reference
+
+The block `init-config.mjs` seeds is a minimal subset. The full surface looks
+like this:
 
 ```jsonc
 {
@@ -93,24 +105,16 @@ After install, enable and configure it — see [Enable](#enable) below for the
 
 ## Default `agent` template
 
-Ships under `template/agent/` in this repo. It declares four states
-(`idle`, `thinking`, `happy`, `sad`) and includes a placeholder atlas image
-(four solid-colored squares) so the runtime works the moment you enable the
-plugin — no art required.
-
-To use the template:
-
-1. Copy `template/agent/` from this repo into
-   `~/.openclaw/assets/avatars/agent/` (or wherever your `assetsDir` resolves
-   to under the `avatars/<id>/` convention).
-2. Paste the config block from `template/agent/README.md` into your
-   `openclaw.json` under `plugins.entries["sprite-core"].config.agents.agent`.
-3. Restart the gateway. The watch will fetch the manifest, render the four
-   placeholder colors, and auto-swap to `thinking` on every send.
+`init-config.mjs` (see [Quick start](#quick-start)) drops a four-state
+placeholder atlas (`idle`, `thinking`, `happy`, `sad`) into
+`<assetsDir>/avatars/agent/` and points the default `agent` config at it. The
+runtime renders four solid-colored squares — enough to verify the wiring end-
+to-end without authoring any art.
 
 Replace the placeholder image with real art whenever you have it; the manifest
 schema does not need to change. See `template/agent/README.md` for the swap
-procedure.
+procedure or run the `openclaw-pixellab-avatar` skill to generate art via
+pixellab.ai.
 
 ## Config reference
 

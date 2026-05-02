@@ -1,6 +1,6 @@
 {
   "id": "sprite-core",
-  "enabledByDefault": false,
+  "enabledByDefault": true,
   "description": "In-gateway data plane for multi-state sprite/atlas avatars: asset serving and TTS streaming.",
   "configSchema": {
     "type": "object",
