@@ -110,9 +110,18 @@ and browse to `http://localhost:18789/sprite-core/ui/` — the dashboard's
 HTML shell is served publicly; its API calls are same-origin and ride the
 session you already have for the OpenClaw Control UI.
 
-`scripts/sync-to-openclaw.sh` serves a narrower use case: it mirrors this
-repo's plugin sources into a sibling `openclaw-src/extensions/sprite-core/`
-checkout. Only relevant if you're developing OpenClaw core at the same time.
+`scripts/sync-to-openclaw.sh` is **deprecated** as of 0.5.3. It used to mirror
+this repo's plugin sources into a sibling `openclaw-src/extensions/sprite-core/`
+checkout (the bundled-plugin layout). With the plugin now published to npm, the
+canonical install path is:
+
+```bash
+openclaw plugins install @tylerwarburton/sprite-core
+openclaw plugins update  @tylerwarburton/sprite-core   # later updates
+```
+
+The script is still in the repo for emergency hotfix use against an
+openclaw-src checkout that you can't restart.
 
 ## License
 

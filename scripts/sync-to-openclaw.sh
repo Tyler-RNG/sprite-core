@@ -1,10 +1,21 @@
 #!/usr/bin/env bash
+# DEPRECATED as of 0.5.3. Prefer the npm-install path:
+#
+#   openclaw plugins install @tylerwarburton/sprite-core
+#   openclaw plugins update  @tylerwarburton/sprite-core   # later updates
+#
+# This script remains for one narrow case: emergency hotfix against an
+# openclaw-src checkout that you can't restart through `openclaw plugins
+# install --force`. Treat it as a legacy escape hatch, not the supported
+# install path. The destination directory `openclaw-src/extensions/sprite-core/`
+# is no longer maintained as a workspace package on the openclaw-src side.
+#
 # Sync the standalone sprite-core plugin into an openclaw checkout.
 #
-# The running gateway loads the bundled plugin from openclaw-src/extensions/
-# sprite-core (and its dist-runtime mirror), not from this standalone repo.
-# This script promotes the standalone repo's sources into that location so a
-# subsequent `~/.openclaw/deploy.sh` run picks them up.
+# The running gateway used to load the bundled plugin from openclaw-src/
+# extensions/sprite-core (and its dist-runtime mirror). This script promotes
+# the standalone repo's sources into that location so a subsequent
+# `~/.openclaw/deploy.sh` run picks them up.
 #
 # Usage: scripts/sync-to-openclaw.sh [openclaw-src-root]
 #   openclaw-src-root defaults to ~/openclaw-src.
@@ -23,6 +34,11 @@
 #   - Tests (*.test.ts) — openclaw-src runs its own test suite.
 
 set -euo pipefail
+
+echo "WARNING: sync-to-openclaw.sh is deprecated."
+echo "  The supported install path is: openclaw plugins install @tylerwarburton/sprite-core"
+echo "  Continuing in 3 seconds — Ctrl-C to abort." >&2
+sleep 3
 
 SPRITE_CORE_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 OPENCLAW_ROOT="${1:-$HOME/openclaw-src}"
