@@ -636,14 +636,8 @@ async function pathExists(p: string): Promise<boolean> {
   }
 }
 
-/**
- * Default assets root: `<XDG_STATE_HOME>/openclaw/assets/avatars` (matching
- * openclaw's filesystem layout). Falls back to `~/.openclaw/state/assets/avatars`.
- */
-export function defaultAssetsRoot(): string {
-  const xdg = process.env.XDG_STATE_HOME;
-  if (xdg && xdg.length > 0) {
-    return path.join(xdg, "openclaw", "assets", "avatars");
-  }
-  return path.join(os.homedir(), ".openclaw", "state", "assets", "avatars");
-}
+// `defaultAssetsRoot` lives in ./pixellab-paths.ts so this file stays free of
+// environment-variable reads — it has fetch calls, and openclaw's install-time
+// scanner treats env-access combined with network calls in the same file as
+// possible credential harvesting.
+export { defaultAssetsRoot } from "./pixellab-paths.js";

@@ -55,10 +55,16 @@ node scripts/pixellab-create.mjs \
 Options:
 
 - `--width / --height <n>` — pixel frame size (default 96×96)
-- `--api-key-command "<cmd>"` — custom secret source (falls back to
-  `PIXELLAB_API_KEY` env or `pass show pixellab/api-key`)
 - `--json` — emit `{ character_id, name, rotations }` for downstream chaining
 - `--dry-run` — print the request payload without calling pixellab
+
+Auth: export `PIXELLAB_API_KEY` in the shell that runs the script. To pull
+from another secret source, do it in the invocation:
+
+```bash
+PIXELLAB_API_KEY=$(pass show pixellab/api-key) \
+  node scripts/pixellab-create.mjs --name "elf" --description "..."
+```
 
 The script waits up to 5 minutes for the background job to finish, then
 prints the character id and the four rotation URLs (`south`, `west`, `east`,
@@ -112,8 +118,8 @@ No `--uid` required — this is a read-only lookup. Each line prints
 `<voiceId>  <name> [category]  <labels>`. Copy the voice id the user
 picks and pass it to the export step via `--voice-id`.
 
-Auth: `ELEVENLABS_API_KEY` env, `--elevenlabs-api-key-command <cmd>`,
-or `pass show elevenlabs/api-key`.
+Auth: export `ELEVENLABS_API_KEY` in the shell, e.g.
+`ELEVENLABS_API_KEY=$(pass show elevenlabs/api-key) node scripts/pixellab-export.mjs --list-voices`.
 
 ### 5b. Export into SpriteCore (step 4 of 4)
 
@@ -204,9 +210,9 @@ agent is TTS-ready the moment it lands in `openclaw.json`:
   library. Useful for smoke-test agents; production agents should pin an
   explicit id.
 
-Auth: `ELEVENLABS_API_KEY` env, `--elevenlabs-api-key-command <cmd>`, or
-`pass show elevenlabs/api-key`. Voice lookup is silent-skip on failure so
-the export still completes with a snippet sans voice block.
+Auth: export `ELEVENLABS_API_KEY` (alongside `PIXELLAB_API_KEY`) when running
+the export. Voice lookup is silent-skip when the env var is unset, so the
+export still completes with a snippet sans voice block.
 
 The compat shim `scripts/avatars/pixellab-import.mjs` forwards to the same
 exporter, so any existing call site keeps working.

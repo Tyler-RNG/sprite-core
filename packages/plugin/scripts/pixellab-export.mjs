@@ -27,12 +27,13 @@
 //   --overwrite          Replace existing output without prompting
 //   --dry-run            Print the plan without writing anything
 //
-// Auth: reads PIXELLAB_API_KEY from the environment. If unset, falls back to
-// `pass show pixellab/api-key` when `pass` is on PATH (matches the upstream
-// Python exporter's behavior). Operators on other secret stores can pipe a
-// custom command via --api-key-command. Never commit the key.
+// Auth: reads PIXELLAB_API_KEY (and ELEVENLABS_API_KEY for voice features) from
+// the environment. To pull from another secret source, do it in the shell, e.g.
+//   PIXELLAB_API_KEY=$(pass show pixellab/api-key) \
+//   ELEVENLABS_API_KEY=$(pass show elevenlabs/api-key) \
+//   node scripts/pixellab-export.mjs ...
+// Never commit the key.
 
-import { execFileSync } from "node:child_process";
 import { createWriteStream } from "node:fs";
 import { mkdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import os from "node:os";
@@ -100,7 +101,6 @@ function parseArgs(argv) {
     agentId: null,
     assetsRoot: null,
     workspace: null,
-    apiKeyCommand: null,
     rename: {},
     skipDownload: false,
     skipExtract: false,
@@ -109,7 +109,6 @@ function parseArgs(argv) {
     voiceId: null,
     voiceAuto: false,
     listVoices: false,
-    elevenApiKeyCommand: null,
     apply: false,
     configPath: null,
   };
@@ -130,9 +129,6 @@ function parseArgs(argv) {
         break;
       case "--workspace":
         opts.workspace = argv[++i];
-        break;
-      case "--api-key-command":
-        opts.apiKeyCommand = argv[++i];
         break;
       case "--rename": {
         // Comma-separated `target:substring` pairs. Each pixellab animation
@@ -180,9 +176,6 @@ function parseArgs(argv) {
       case "--list-voices":
         opts.listVoices = true;
         break;
-      case "--elevenlabs-api-key-command":
-        opts.elevenApiKeyCommand = argv[++i];
-        break;
       case "--apply":
         // Patch the generated snippet directly into openclaw.json under
         // `plugins.entries["sprite-core"].config.agents.<agent-id>`. Backs
@@ -227,9 +220,6 @@ function printUsage() {
     "  --assets-root <dir>  SpriteCore assets root (default: ~/.openclaw/state/assets/avatars)",
   );
   console.error("  --workspace <dir>    Scratch dir for download + extract");
-  console.error("  --api-key-command <cmd>  Shell command whose stdout is the API key");
-  console.error("                           (e.g. 'pass show pixellab/api-key'); fallback path");
-  console.error("                           when PIXELLAB_API_KEY is unset");
   console.error("  --skip-download      Reuse existing zip in workspace");
   console.error("  --skip-extract       Reuse already-extracted directory");
   console.error("  --overwrite          Replace existing output");
@@ -239,8 +229,9 @@ function printUsage() {
   console.error("  --voice-id <id>      Include a voice block in the printed snippet");
   console.error("  --voice auto         Pick the first voice from the ElevenLabs library");
   console.error("  --list-voices        List available ElevenLabs voices and exit");
-  console.error("  --elevenlabs-api-key-command <cmd>  Stdout is the ElevenLabs API key;");
-  console.error("                       fallback when ELEVENLABS_API_KEY env is unset");
+  console.error("");
+  console.error("  Auth: export PIXELLAB_API_KEY (and ELEVENLABS_API_KEY for voice");
+  console.error("  features) before running.");
   console.error("");
   console.error("  Config apply:");
   console.error("  --apply              Patch openclaw.json directly (backed up first)");
@@ -305,78 +296,7 @@ async function applyToConfig({ agentId, agentBlock, configPath }) {
   console.log("  pkill -9 -f openclaw-gateway; nohup openclaw gateway run --bind loopback --port 18789 --force > /tmp/openclaw-gateway.log 2>&1 &");
 }
 
-function resolveApiKey(apiKeyCommand) {
-  const fromEnv = process.env.PIXELLAB_API_KEY?.trim();
-  if (fromEnv) {
-    return fromEnv;
-  }
-  if (apiKeyCommand) {
-    try {
-      const out = execFileSync("sh", ["-c", apiKeyCommand], {
-        encoding: "utf8",
-        stdio: ["ignore", "pipe", "inherit"],
-      }).trim();
-      if (out) {
-        return out;
-      }
-    } catch (err) {
-      console.error(`--api-key-command failed: ${err.message}`);
-      process.exit(1);
-    }
-  }
-  // Fallback: Unix password-store. Matches the upstream Python exporter's
-  // behavior on machines where `pass show pixellab/api-key` is already set up.
-  try {
-    const out = execFileSync("pass", ["show", "pixellab/api-key"], {
-      encoding: "utf8",
-      stdio: ["ignore", "pipe", "ignore"],
-    }).trim();
-    if (out) {
-      return out;
-    }
-  } catch {
-    // pass isn't installed or doesn't have that entry — fall through
-  }
-  console.error("No pixellab API key available.");
-  console.error("  Either export PIXELLAB_API_KEY=<key> in the shell that runs this script,");
-  console.error("  or pass --api-key-command '<cmd whose stdout is the key>',");
-  console.error("  or put the key in `pass` as `pixellab/api-key`.");
-  process.exit(1);
-  return ""; // unreachable; keeps consistent-return happy
-}
-
-function resolveElevenLabsKey(apiKeyCommand) {
-  const fromEnv = process.env.ELEVENLABS_API_KEY?.trim();
-  if (fromEnv) {
-    return fromEnv;
-  }
-  if (apiKeyCommand) {
-    try {
-      const out = execFileSync("sh", ["-c", apiKeyCommand], {
-        encoding: "utf8",
-        stdio: ["ignore", "pipe", "inherit"],
-      }).trim();
-      if (out) {
-        return out;
-      }
-    } catch (err) {
-      console.error(`--elevenlabs-api-key-command failed: ${err.message}`);
-      return null;
-    }
-  }
-  try {
-    const out = execFileSync("pass", ["show", "elevenlabs/api-key"], {
-      encoding: "utf8",
-      stdio: ["ignore", "pipe", "ignore"],
-    }).trim();
-    if (out) {
-      return out;
-    }
-  } catch {
-    // pass not available or entry missing — silent; caller decides fallback.
-  }
-  return null;
-}
+import { requirePixellabApiKey, readElevenLabsApiKey } from "./_pixellab-env.mjs";
 
 async function fetchElevenLabsVoices(apiKey) {
   const res = await fetch("https://api.elevenlabs.io/v1/voices", {
@@ -834,11 +754,13 @@ async function main() {
   // Short-circuit: --list-voices is a read-only lookup against ElevenLabs.
   // No pixellab calls, no --uid required.
   if (opts.listVoices) {
-    const elevenKey = resolveElevenLabsKey(opts.elevenApiKeyCommand);
+    const elevenKey = readElevenLabsApiKey();
     if (!elevenKey) {
-      console.error("No ElevenLabs API key available.");
-      console.error("  Set ELEVENLABS_API_KEY, pass --elevenlabs-api-key-command,");
-      console.error("  or put the key in `pass` as `elevenlabs/api-key`.");
+      console.error("ELEVENLABS_API_KEY is not set.");
+      console.error("  Export it before running, e.g.:");
+      console.error(
+        "    ELEVENLABS_API_KEY=$(pass show elevenlabs/api-key) node scripts/pixellab-export.mjs --list-voices",
+      );
       return 1;
     }
     const voices = await fetchElevenLabsVoices(elevenKey);
@@ -856,7 +778,7 @@ async function main() {
     return 0;
   }
 
-  const apiKey = opts.dryRun ? "dry-run-noop" : resolveApiKey(opts.apiKeyCommand);
+  const apiKey = opts.dryRun ? "dry-run-noop" : requirePixellabApiKey();
   const assetsRoot = resolveAssetsRoot(opts.assetsRoot);
   const workspace = resolveWorkspace(opts.workspace, assetsRoot);
 
@@ -977,7 +899,7 @@ async function main() {
   if (opts.voiceId) {
     voiceBlock = { provider: "elevenlabs", voiceId: opts.voiceId };
   } else if (opts.voiceAuto) {
-    const elevenKey = resolveElevenLabsKey(opts.elevenApiKeyCommand);
+    const elevenKey = readElevenLabsApiKey();
     if (!elevenKey) {
       console.error(
         "warning: --voice auto requested but no ElevenLabs API key available; skipping voice block",

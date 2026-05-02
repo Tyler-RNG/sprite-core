@@ -28,13 +28,16 @@
 //   --frame-count <n>     Frames per animation (4-16, default: 8; v3 only)
 //   --directions <list>   Comma-separated list; omit for all available
 //   --timeout-ms <n>      Max wait per emotion (default: 600000 = 10min)
-//   --api-key-command <cmd>  Shell command returning the API key on stdout
 //   --dry-run             Print the plan without calling pixellab
 //   --json                Emit final state as JSON to stdout
+//
+// Auth: set PIXELLAB_API_KEY in the environment before running. To pull from
+// another secret source, do it in the shell, e.g.
+//   PIXELLAB_API_KEY=$(pass show pixellab/api-key) node scripts/pixellab-animate.mjs ...
 
-import { execFileSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { requirePixellabApiKey } from "./_pixellab-env.mjs";
 
 const PIXELLAB_API_BASE = "https://api.pixellab.ai/v2";
 const DEFAULT_TIMEOUT_MS = 600_000;
@@ -71,7 +74,6 @@ function parseArgs(argv) {
     frameCount: DEFAULT_FRAME_COUNT,
     directions: null,
     timeoutMs: DEFAULT_TIMEOUT_MS,
-    apiKeyCommand: null,
     dryRun: false,
     json: false,
   };
@@ -109,9 +111,6 @@ function parseArgs(argv) {
         break;
       case "--timeout-ms":
         opts.timeoutMs = parseInt(argv[++i], 10);
-        break;
-      case "--api-key-command":
-        opts.apiKeyCommand = argv[++i];
         break;
       case "--dry-run":
         opts.dryRun = true;
@@ -153,45 +152,10 @@ function printUsage() {
   console.error("  --frame-count <n>      4-16 (default 8; v3 only)");
   console.error("  --directions <list>    Comma-separated directions");
   console.error("  --timeout-ms <n>       Max wait per emotion (default 600000)");
-  console.error("  --api-key-command <cmd>  Shell command returning the API key");
   console.error("  --dry-run              Print plan without calling pixellab");
   console.error("  --json                 Emit final animation list as JSON");
-}
-
-function resolveApiKey(apiKeyCommand) {
-  const fromEnv = process.env.PIXELLAB_API_KEY?.trim();
-  if (fromEnv) {
-    return fromEnv;
-  }
-  if (apiKeyCommand) {
-    try {
-      const out = execFileSync("sh", ["-c", apiKeyCommand], {
-        encoding: "utf8",
-        stdio: ["ignore", "pipe", "inherit"],
-      }).trim();
-      if (out) {
-        return out;
-      }
-    } catch (err) {
-      console.error(`--api-key-command failed: ${err.message}`);
-      process.exit(1);
-    }
-  }
-  try {
-    const out = execFileSync("pass", ["show", "pixellab/api-key"], {
-      encoding: "utf8",
-      stdio: ["ignore", "pipe", "ignore"],
-    }).trim();
-    if (out) {
-      return out;
-    }
-  } catch {
-    // fall through
-  }
-  console.error("No pixellab API key available.");
-  console.error("  Set PIXELLAB_API_KEY, pass --api-key-command, or put the key in `pass`.");
-  process.exit(1);
-  return ""; // unreachable
+  console.error("");
+  console.error("Auth: export PIXELLAB_API_KEY before running.");
 }
 
 function resolvePrompt(emotion, promptMap) {
@@ -298,7 +262,7 @@ async function main() {
     return 0;
   }
 
-  const apiKey = resolveApiKey(opts.apiKeyCommand);
+  const apiKey = requirePixellabApiKey();
 
   log(opts, "");
   log(opts, "queueing animations…");

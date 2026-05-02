@@ -22,16 +22,17 @@
 //   --width <n>         Pixel width (default: 96)
 //   --height <n>        Pixel height (default: 96)
 //   --timeout-ms <n>    Max time to wait for the background job (default: 300000 ms)
-//   --api-key-command <cmd>  Shell command whose stdout is the API key
 //   --dry-run           Print the request without sending it
 //   --json              Emit just the resulting character_id + rotation_urls as JSON
 //                        (useful when chaining into other scripts)
 //
-// Auth: PIXELLAB_API_KEY env → --api-key-command <cmd> → `pass show pixellab/api-key`.
+// Auth: set PIXELLAB_API_KEY in the environment before running. To pull from
+// another secret source, do it in the shell, e.g.
+//   PIXELLAB_API_KEY=$(pass show pixellab/api-key) node scripts/pixellab-create.mjs ...
 
-import { execFileSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { requirePixellabApiKey } from "./_pixellab-env.mjs";
 
 const PIXELLAB_API_BASE = "https://api.pixellab.ai/v2";
 const DEFAULT_TIMEOUT_MS = 300_000;
@@ -44,7 +45,6 @@ function parseArgs(argv) {
     width: 96,
     height: 96,
     timeoutMs: DEFAULT_TIMEOUT_MS,
-    apiKeyCommand: null,
     dryRun: false,
     json: false,
   };
@@ -67,9 +67,6 @@ function parseArgs(argv) {
         break;
       case "--timeout-ms":
         opts.timeoutMs = parseInt(argv[++i], 10);
-        break;
-      case "--api-key-command":
-        opts.apiKeyCommand = argv[++i];
         break;
       case "--dry-run":
         opts.dryRun = true;
@@ -113,45 +110,10 @@ function printUsage() {
   console.error("  --width <n>           Pixel width (default: 96)");
   console.error("  --height <n>          Pixel height (default: 96)");
   console.error("  --timeout-ms <n>      Max background-job wait (default: 300000)");
-  console.error("  --api-key-command <cmd>  Shell command that prints the API key on stdout");
   console.error("  --dry-run             Print the request without sending");
   console.error("  --json                Emit character_id + rotations as JSON only");
-}
-
-function resolveApiKey(apiKeyCommand) {
-  const fromEnv = process.env.PIXELLAB_API_KEY?.trim();
-  if (fromEnv) {
-    return fromEnv;
-  }
-  if (apiKeyCommand) {
-    try {
-      const out = execFileSync("sh", ["-c", apiKeyCommand], {
-        encoding: "utf8",
-        stdio: ["ignore", "pipe", "inherit"],
-      }).trim();
-      if (out) {
-        return out;
-      }
-    } catch (err) {
-      console.error(`--api-key-command failed: ${err.message}`);
-      process.exit(1);
-    }
-  }
-  try {
-    const out = execFileSync("pass", ["show", "pixellab/api-key"], {
-      encoding: "utf8",
-      stdio: ["ignore", "pipe", "ignore"],
-    }).trim();
-    if (out) {
-      return out;
-    }
-  } catch {
-    // fall through
-  }
-  console.error("No pixellab API key available.");
-  console.error("  Set PIXELLAB_API_KEY, pass --api-key-command, or put the key in `pass`.");
-  process.exit(1);
-  return ""; // unreachable; keeps consistent-return happy
+  console.error("");
+  console.error("Auth: export PIXELLAB_API_KEY before running.");
 }
 
 async function createCharacter({ apiKey, fullDescription, width, height }) {
@@ -238,7 +200,7 @@ async function main() {
     return 0;
   }
 
-  const apiKey = resolveApiKey(opts.apiKeyCommand);
+  const apiKey = requirePixellabApiKey();
 
   log(opts, "  queueing character creation…");
   const created = await createCharacter({
