@@ -1,6 +1,6 @@
 {
   "name": "@tylerwarburton/sprite-core-client",
-  "version": "0.5.5",
+  "version": "0.5.6",
   "description": "TypeScript client SDK for the SpriteCore plugin — portable animation graph + sprite player for browsers, Node, and any JS runtime",
   "type": "module",
   "main": "./dist/index.js",

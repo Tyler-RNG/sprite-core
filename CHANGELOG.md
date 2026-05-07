@@ -5,7 +5,7 @@ All four packages in this repo (`@tylerwarburton/sprite-core`,
 and `-android`, `SpriteCoreClient`) release together at one version. Tag
 format: `v<version>` (e.g. `v1.0.0`).
 
-## [0.5.5] - 2026-05-07
+## [0.5.6] - 2026-05-07
 
 ### Changed
 
