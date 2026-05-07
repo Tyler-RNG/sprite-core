@@ -227,27 +227,30 @@ export default definePluginEntry({
         fn: (ctx: PromptCtx) => { stablePrefix: string } | undefined,
       ) => void;
     };
-    (api as unknown as SystemPromptApi).registerSystemPromptContribution(
-      (promptCtx) => {
-        if (!promptCtx.agentId) {
-          return undefined;
-        }
-        if (!hasSpriteDisplayCapability(promptCtx.runtimeCapabilities)) {
-          return undefined;
-        }
-        const fresh = readPluginConfig();
-        const agent = fresh?.agents?.[promptCtx.agentId];
-        if (!agent?.avatar || !isAtlasAvatarConfig(agent.avatar)) {
-          return undefined;
-        }
-        const text = buildPromptingInstruction({
-          avatar: agent.avatar,
-          prompting: agent.prompting,
-          emotions: agent.emotions,
-        });
-        return text ? { stablePrefix: text } : undefined;
-      },
-    );
+    const promptApi = api as unknown as Partial<SystemPromptApi>;
+    if (typeof promptApi.registerSystemPromptContribution === "function") {
+      promptApi.registerSystemPromptContribution(
+        (promptCtx) => {
+          if (!promptCtx.agentId) {
+            return undefined;
+          }
+          if (!hasSpriteDisplayCapability(promptCtx.runtimeCapabilities)) {
+            return undefined;
+          }
+          const fresh = readPluginConfig();
+          const agent = fresh?.agents?.[promptCtx.agentId];
+          if (!agent?.avatar || !isAtlasAvatarConfig(agent.avatar)) {
+            return undefined;
+          }
+          const text = buildPromptingInstruction({
+            avatar: agent.avatar,
+            prompting: agent.prompting,
+            emotions: agent.emotions,
+          });
+          return text ? { stablePrefix: text } : undefined;
+        },
+      );
+    }
 
     // Gateway RPC: per-agent avatar + voice + prompting descriptors. Mirrors
     // the GET /sprite-core/agents HTTP endpoint over the WebSocket so clients

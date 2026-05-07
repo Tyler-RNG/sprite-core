@@ -5,6 +5,45 @@ All four packages in this repo (`@tylerwarburton/sprite-core`,
 and `-android`, `SpriteCoreClient`) release together at one version. Tag
 format: `v<version>` (e.g. `v1.0.0`).
 
+## [0.5.5] - 2026-05-07
+
+### Changed
+
+- Plugin compat: works on upstream openclaw `>=2026.5.0`. Bumps
+  `peerDependencies.openclaw` from `>=2026.4.10` to `>=2026.5.0` and updates
+  the dev pin to `^2026.5.6`.
+
+### Fixed
+
+- Plugin now declares `activation.onStartup: true` in `openclaw.plugin.json`
+  so upstream's plugin loader actually invokes `register()` at gateway boot.
+  Without it, the plugin was loaded but its HTTP routes (`/sprite-core/ui`,
+  `/sprite-core/agents`, `/openclaw-assets`, etc.) were never registered —
+  every URL fell through to the Control SPA catch-all.
+- `api.registerSystemPromptContribution(...)` is now wrapped in a
+  `typeof === "function"` guard. Upstream openclaw 2026.5.x doesn't expose
+  that method (fork-only API), and an unguarded call threw `TypeError` and
+  aborted plugin registration. The plugin now gracefully skips the
+  prompt-contribution feature on hosts that don't expose it; atlas/TTS/STT
+  and UI continue to work. Driving sprite state markers from the client
+  side (or via tools/RPC) remains unaffected.
+- `ui-dist` resolver now also probes `<here>/../../ui-dist` and
+  `<here>/../../../ui-dist`. Previous candidates only worked for the bundled
+  (tsdown) layout and the source layout; the tsc-emitted `dist/src/`-nested
+  layout (which is what the new `build` script produces) needed two more
+  candidates. Without this, `/sprite-core/ui` returned a 503 with the
+  "SpriteCore UI bundle not built" message even when `ui-dist/` was
+  correctly shipped.
+
+### Build
+
+- Added `build` and `prepack` scripts to `packages/plugin/package.json`.
+  `prepack` runs `pnpm run build:ui && tsc` so `npm pack` produces a
+  self-contained tarball with both `dist/` and `ui-dist/` populated, even
+  on a fresh clone where neither directory exists yet.
+- Added `dist` to the plugin's `files` array so the build output ships in
+  the published tarball alongside the existing `ui-dist`.
+
 ## Unreleased
 
 ### Added

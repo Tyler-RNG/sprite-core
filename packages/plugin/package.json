@@ -1,7 +1,7 @@
 {
   "name": "@tylerwarburton/sprite-core",
-  "version": "0.5.4",
-  "description": "OpenClaw SpriteCore plugin — in-gateway asset + TTS + STT data plane for multi-state avatars",
+  "version": "0.5.5",
+  "description": "OpenClaw SpriteCore plugin \u2014 in-gateway asset + TTS + STT data plane for multi-state avatars",
   "type": "module",
   "repository": {
     "type": "git",
@@ -21,9 +21,12 @@
     "openclaw.plugin.json",
     "tsconfig.json",
     "LICENSE",
-    "README.md"
+    "README.md",
+    "dist"
   ],
   "scripts": {
+    "build": "tsc",
+    "prepack": "pnpm run build:ui && tsc",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "build:ui": "pnpm --filter @tylerwarburton/sprite-core-ui build",
@@ -35,12 +38,12 @@
   },
   "devDependencies": {
     "@types/jszip": "^3.4.1",
-    "openclaw": "2026.4.15-beta.1",
+    "openclaw": "^2026.5.6",
     "typescript": "^5.6.0",
     "vitest": "^2.0.0"
   },
   "peerDependencies": {
-    "openclaw": ">=2026.4.10"
+    "openclaw": ">=2026.5.0"
   },
   "peerDependenciesMeta": {
     "openclaw": {

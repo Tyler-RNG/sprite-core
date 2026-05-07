@@ -19,3 +19,4 @@ packages/client-kotlin/local.properties
 packages/client-swift/.build/
 packages/client-swift/.swiftpm/
 packages/client-swift/Package.resolved
+*.tgz

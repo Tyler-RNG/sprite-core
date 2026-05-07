@@ -1,6 +1,6 @@
 {
   "name": "@tylerwarburton/sprite-core-schema",
-  "version": "0.5.4",
+  "version": "0.5.5",
   "description": "Wire-protocol schema for the SpriteCore plugin + client SDKs (TypeBox)",
   "type": "module",
   "main": "./dist/index.js",

@@ -32,7 +32,12 @@ import fsSync from "node:fs";
 
 function resolveUiDistDir(): string {
   const here = path.dirname(fileURLToPath(import.meta.url));
-  const candidates = [path.resolve(here, "..", "ui-dist"), path.resolve(here, "ui-dist")];
+  const candidates = [
+    path.resolve(here, "..", "ui-dist"),
+    path.resolve(here, "ui-dist"),
+    path.resolve(here, "..", "..", "ui-dist"),
+    path.resolve(here, "..", "..", "..", "ui-dist"),
+  ];
   for (const c of candidates) {
     if (fsSync.existsSync(path.join(c, "index.html"))) {
       return c;
