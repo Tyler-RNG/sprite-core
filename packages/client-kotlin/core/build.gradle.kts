@@ -5,7 +5,7 @@ plugins {
 }
 
 group = "ai.openclaw.spritecore"
-version = findProperty("version")?.toString() ?: "0.5.6"
+version = findProperty("version")?.toString() ?: "0.5.7"
 
 kotlin {
     jvmToolchain(17)

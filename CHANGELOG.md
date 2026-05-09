@@ -5,6 +5,21 @@ All four packages in this repo (`@tylerwarburton/sprite-core`,
 and `-android`, `SpriteCoreClient`) release together at one version. Tag
 format: `v<version>` (e.g. `v1.0.0`).
 
+## [0.5.7] - 2026-05-09
+
+### Fixed
+
+- Plugin: `node.getCharacterManifest` gateway RPC is now registered with
+  `{ scope: "operator.read" }`. Without an explicit scope, upstream openclaw
+  (>=2026.5.0) defaults unscoped methods to `operator.admin`, which silently
+  rejected every phone/watch call with `INVALID_REQUEST: missing scope:
+  operator.admin`. The kit's `fetchManifest` returned null, so sprites never
+  rendered on the phone — even though the gateway connection, TTS, STT and
+  the dashboard sprite UI all kept working (they ride HTTP routes, not RPC
+  scope). Sibling RPC `sprite-core.agents` already opts down to
+  `operator.read`; this RPC was missed during the 0.5.5 fork→upstream port
+  and the regression only surfaced after the host-default-deny took effect.
+
 ## [0.5.6] - 2026-05-07
 
 ### Changed

@@ -291,7 +291,16 @@ export default definePluginEntry({
 
     // Gateway RPC: ship the watch a ready-to-render character manifest. Reads
     // fresh plugin config each call so config reload is observed.
-    api.registerGatewayMethod("node.getCharacterManifest", async (ctx) => {
+    //
+    // Scope: `operator.read` — same reasoning as `sprite-core.agents` above.
+    // Without an explicit scope the gateway defaults unclassified methods to
+    // `operator.admin`, which silently denies every phone/watch call (the
+    // kit's `fetchManifest` returns null and sprites never render). Sibling
+    // `sprite-core.agents` already opts down; this RPC was missed during the
+    // 0.5.5 fork→upstream port and broke phone rendering on 2026.5.x.
+    api.registerGatewayMethod(
+      "node.getCharacterManifest",
+      async (ctx) => {
       const params = ctx.params as { agentId?: unknown; modes?: unknown };
       const agentId =
         typeof params.agentId === "string" && params.agentId.trim().length > 0
@@ -330,6 +339,8 @@ export default definePluginEntry({
           message: "character manifest unavailable",
         });
       }
-    });
+      },
+      { scope: "operator.read" },
+    );
   },
 });
