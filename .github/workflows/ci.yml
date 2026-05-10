@@ -80,7 +80,14 @@ jobs:
           gradle-version: 8.10.2
       - name: Gradle build + test (:core, :android, :compose)
         working-directory: packages/client-kotlin
-        run: gradle :core:build :core:test :android:build :android:test :compose:build --no-daemon
+        # :compose:assemble instead of :compose:build because :build pulls in
+        # Android Lint, which crashes with IncompatibleClassChangeError inside
+        # RememberInCompositionDetector when AGP 8.7.x runs against the Compose
+        # plugin/runtime we're on. The release job publishes via
+        # :compose:publish*Release, which doesn't run lint, so the artifact
+        # ships fine. Switch back to :compose:build once we move to an AGP/lint
+        # combo without that crash, or once we ship lint config that skips it.
+        run: gradle :core:build :core:test :android:build :android:test :compose:assemble --no-daemon
 
   swift:
     runs-on: macos-latest
