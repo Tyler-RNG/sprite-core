@@ -1,7 +1,7 @@
 plugins {
     id("com.android.library")
     kotlin("android")
-    kotlin("plugin.serialization")
+    id("org.jetbrains.kotlin.plugin.compose")
     `maven-publish`
 }
 
@@ -9,12 +9,16 @@ group = "ai.openclaw.spritecore"
 version = findProperty("version")?.toString() ?: "0.5.8"
 
 android {
-    namespace = "ai.openclaw.spritecore.client.android"
+    namespace = "ai.openclaw.spritecore.client.compose"
     compileSdk = 36
 
     defaultConfig {
-        // Lowest common denominator across phone (31) and wear (30) consumers.
+        // Matches :android — the wearable consumes both at minSdk 30.
         minSdk = 30
+    }
+
+    buildFeatures {
+        compose = true
     }
 
     compileOptions {
@@ -44,7 +48,13 @@ kotlin {
 
 dependencies {
     api(project(":core"))
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.10.0")
+    api(project(":android"))
+
+    val composeBom = platform("androidx.compose:compose-bom:2026.04.01")
+    implementation(composeBom)
+    api("androidx.compose.runtime:runtime")
+    api("androidx.compose.foundation:foundation")
+    api("androidx.compose.ui:ui")
 }
 
 afterEvaluate {
@@ -52,10 +62,10 @@ afterEvaluate {
         publications {
             create<MavenPublication>("release") {
                 from(components["release"])
-                artifactId = "sprite-core-client-android"
+                artifactId = "sprite-core-client-compose"
                 pom {
-                    name.set("SpriteCore Client (Android)")
-                    description.set("Bitmap-backed FrameSource for the SpriteCore client kit on Android / Wear OS")
+                    name.set("SpriteCore Client (Compose)")
+                    description.set("Compose UI wrapper for the SpriteCore client kit on Android / Wear OS")
                     url.set("https://github.com/Tyler-RNG/sprite-core")
                     licenses {
                         license {

@@ -78,9 +78,9 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: 8.10.2
-      - name: Gradle build + test (:core, :android)
+      - name: Gradle build + test (:core, :android, :compose)
         working-directory: packages/client-kotlin
-        run: gradle :core:build :core:test :android:build :android:test --no-daemon
+        run: gradle :core:build :core:test :android:build :android:test :compose:build --no-daemon
 
   swift:
     runs-on: macos-latest

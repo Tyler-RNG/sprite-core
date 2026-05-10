@@ -45,20 +45,24 @@ function fail(msg) {
 }
 
 const plugin = readJson("packages/plugin/package.json");
+const pluginUi = readJson("packages/plugin/ui/package.json");
 const clientJs = readJson("packages/client-js/package.json");
 const schema = readJson("schema/package.json");
 const kotlinCore = readGradleVersion("packages/client-kotlin/core/build.gradle.kts");
 const kotlinAndroid = readGradleVersion("packages/client-kotlin/android/build.gradle.kts");
+const kotlinCompose = readGradleVersion("packages/client-kotlin/compose/build.gradle.kts");
 // SwiftPM has no declared version — the git tag IS the Swift version. Skip.
 
 const expected = process.argv[2] ?? process.env.TAG_VERSION ?? plugin.version;
 
 const entries = [
   ["plugin", plugin.version],
+  ["plugin/ui", pluginUi.version],
   ["client-js", clientJs.version],
   ["schema", schema.version],
   ["client-kotlin:core (Gradle fallback)", kotlinCore],
   ["client-kotlin:android (Gradle fallback)", kotlinAndroid],
+  ["client-kotlin:compose (Gradle fallback)", kotlinCompose],
 ];
 
 let mismatch = false;

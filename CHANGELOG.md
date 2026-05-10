@@ -5,6 +5,27 @@ All four packages in this repo (`@tylerwarburton/sprite-core`,
 and `-android`, `SpriteCoreClient`) release together at one version. Tag
 format: `v<version>` (e.g. `v1.0.0`).
 
+## [0.5.8] - 2026-05-10
+
+### Added
+
+- Kotlin: new `:compose` Gradle module publishing
+  `ai.openclaw.spritecore:sprite-core-client-compose`. Ships
+  `ai.openclaw.spritecore.client.compose.CharacterAvatar`, a Compose
+  Composable that wires `AnimationGraph` + `SpriteAnimationPlayer` +
+  `BitmapFrameSource` into a drop-in widget. Takes a `bitmapTransform:
+  (Bitmap) -> Bitmap` hook so platform-specific framing (e.g. a watch face
+  cropping a full-body sprite to a headshot) lives at the call site rather
+  than inside each consuming app.
+- Swift: `CGImageFrameSource` (atlas-aware ImageIO-backed `FrameSource`
+  mirroring Kotlin's `BitmapFrameSource`) and `CharacterAvatarView` (SwiftUI
+  View with a `cgImageTransform` hook). Gated on `canImport(SwiftUI) &&
+  canImport(ImageIO)`.
+- TypeScript: `ImageBitmapFrameSource` (atlas-aware `FrameSource<AtlasFrame>`
+  with async prefetch) and `mountCharacterAvatar(canvas, opts)` returning a
+  `{ setState, dispose }` controller. Framework-free — drives an
+  `HTMLCanvasElement` directly via 2D context.
+
 ## [0.5.7] - 2026-05-09
 
 ### Fixed

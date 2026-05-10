@@ -5,3 +5,5 @@ export * from "./animation-graph.js";
 export * from "./sprite-player.js";
 export * from "./observable.js";
 export * from "./asset-source.js";
+export * from "./image-bitmap-frame-source.js";
+export * from "./character-avatar.js";

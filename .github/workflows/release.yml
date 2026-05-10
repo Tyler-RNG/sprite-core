@@ -130,7 +130,7 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: 8.10.2
-      - name: Publish :core + :android to GitHub Packages
+      - name: Publish :core + :android + :compose to GitHub Packages
         working-directory: packages/client-kotlin
         env:
           GITHUB_ACTOR: ${{ github.actor }}
@@ -139,6 +139,7 @@ jobs:
           gradle \
             :core:publishMavenPublicationToGitHubPackagesRepository \
             :android:publishReleasePublicationToGitHubPackagesRepository \
+            :compose:publishReleasePublicationToGitHubPackagesRepository \
             -Pversion="${{ needs.resolve-version.outputs.version }}" \
             --no-daemon
 
