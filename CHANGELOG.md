@@ -59,7 +59,7 @@ format: `v<version>` (e.g. `v1.0.0`).
 - Added `dist` to the plugin's `files` array so the build output ships in
   the published tarball alongside the existing `ui-dist`.
 
-## Unreleased
+## [0.5.0] - 2026-04-27
 
 ### Added
 
@@ -103,8 +103,3 @@ format: `v<version>` (e.g. `v1.0.0`).
   document, with `storage` event + `prefers-color-scheme` fallback.
 - `pnpm typecheck` is green at the repo root (three pre-existing errors in
   `packages/plugin` blocked the documented quickstart).
-
-## 1.0.0 — 2026-04-23
-
-Initial release of the plugin extracted from `openclaw-src/extensions/sprite-core/`.
-See `packages/plugin/README.md` for plugin-specific documentation.
