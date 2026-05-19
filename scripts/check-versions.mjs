@@ -51,6 +51,7 @@ const schema = readJson("schema/package.json");
 const kotlinCore = readGradleVersion("packages/client-kotlin/core/build.gradle.kts");
 const kotlinAndroid = readGradleVersion("packages/client-kotlin/android/build.gradle.kts");
 const kotlinCompose = readGradleVersion("packages/client-kotlin/compose/build.gradle.kts");
+const kotlinGlasses = readGradleVersion("packages/client-kotlin/glasses/build.gradle.kts");
 // SwiftPM has no declared version — the git tag IS the Swift version. Skip.
 
 const expected = process.argv[2] ?? process.env.TAG_VERSION ?? plugin.version;
@@ -63,6 +64,7 @@ const entries = [
   ["client-kotlin:core (Gradle fallback)", kotlinCore],
   ["client-kotlin:android (Gradle fallback)", kotlinAndroid],
   ["client-kotlin:compose (Gradle fallback)", kotlinCompose],
+  ["client-kotlin:glasses (Gradle fallback)", kotlinGlasses],
 ];
 
 let mismatch = false;

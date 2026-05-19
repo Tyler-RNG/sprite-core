@@ -5,6 +5,22 @@ All four packages in this repo (`@tylerwarburton/sprite-core`,
 and `-android`, `SpriteCoreClient`) release together at one version. Tag
 format: `v<version>` (e.g. `v1.0.0`).
 
+## [0.5.9] - 2026-05-19
+
+### Added
+
+- Kotlin: new `:glasses` Gradle module publishing
+  `ai.openclaw.spritecore:sprite-core-client-glasses`. Brilliant Frame BLE
+  transport (`GlassesBleTransport`), Lua REPL client + sub-channel framing
+  (`GlassesClient`), mic + IMU sources (`GlassesMicSource`,
+  `GlassesInputSource`), and a `FrameSource<Bitmap>`-driven display sink
+  (`GlassesDisplaySink`) that nearest-neighbour quantizes to a 16-color
+  palette and streams 4bpp BEGIN/CHUNK/COMMIT packets. Bundles an on-device
+  Lua client app (`assets/glasses_app.lua`) that owns mic drain, IMU
+  callbacks, and display draw decode. Lets a phone-side companion (the new
+  openclaw `apps/wearable/glasses` app) treat the Frame as a thin BLE
+  client the same way the wearable treats Wear OS.
+
 ## [0.5.8] - 2026-05-10
 
 ### Added
