@@ -5,6 +5,13 @@ All four packages in this repo (`@tylerwarburton/sprite-core`,
 and `-android`, `SpriteCoreClient`) release together at one version. Tag
 format: `v<version>` (e.g. `v1.0.0`).
 
+## [0.5.10] - 2026-05-19
+
+Supersedes 0.5.9. The release workflow's Kotlin publish step did not list
+`:glasses`, so `sprite-core-client-glasses` was not published on v0.5.9.
+0.5.10 fixes the workflow and re-ships the same content; consumers should
+use 0.5.10 onwards.
+
 ## [0.5.9] - 2026-05-19
 
 ### Added
