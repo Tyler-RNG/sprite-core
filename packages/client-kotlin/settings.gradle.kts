@@ -19,3 +19,4 @@ rootProject.name = "sprite-core-client"
 include(":core")
 include(":android")
 include(":compose")
+include(":glasses")
